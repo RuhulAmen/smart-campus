@@ -3,11 +3,17 @@ from flask_cors import CORS
 from flask_pymongo import PyMongo
 from dotenv import load_dotenv
 import os
+import sys
 import time
 
+# Ensure backend directory is in sys.path so models, routes, and utils can be imported directly
+backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'backend'))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
 # Load .env: support both root .env and backend/.env regardless of working directory
-root_env = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env'))
-backend_env = os.path.abspath(os.path.join(os.path.dirname(__file__), '.env'))
+root_env = os.path.abspath(os.path.join(os.path.dirname(__file__), '.env'))
+backend_env = os.path.abspath(os.path.join(backend_dir, '.env'))
 if os.path.exists(root_env):
     load_dotenv(root_env)
 if os.path.exists(backend_env):
@@ -51,8 +57,8 @@ except Exception as e:
     app.config['MONGO_URI'] = fallback_uri
     app.mongo = PyMongo(app, serverSelectionTimeoutMS=MONGO_TIMEOUT_MS)
 
-# Absolute path to the frontend directory (independent of the working directory)
-FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'frontend'))
+# Absolute path to the frontend directory
+FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), 'frontend'))
 
 # Import models and routes
 from models import Facility
