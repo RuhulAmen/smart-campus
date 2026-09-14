@@ -5,8 +5,13 @@ from dotenv import load_dotenv
 import os
 import time
 
-# Ensure the .env next to this file is loaded regardless of working directory
-load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
+# Load .env: support both root .env and backend/.env regardless of working directory
+root_env = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.env'))
+backend_env = os.path.abspath(os.path.join(os.path.dirname(__file__), '.env'))
+if os.path.exists(root_env):
+    load_dotenv(root_env)
+if os.path.exists(backend_env):
+    load_dotenv(backend_env)
 
 # Initialize Flask app
 app = Flask(__name__)

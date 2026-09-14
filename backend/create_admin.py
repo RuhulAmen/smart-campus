@@ -23,10 +23,16 @@ import bcrypt
 from dotenv import load_dotenv
 from pymongo import MongoClient
 
-load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'))
+root_env = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.env'))
+backend_env = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'))
+if os.path.exists(root_env):
+    load_dotenv(root_env)
+if os.path.exists(backend_env):
+    load_dotenv(backend_env)
 
 MONGO_URI = os.getenv('MONGO_URI', 'mongodb://localhost:27017/smart_campus')
 DB_NAME = os.getenv('MONGO_DB_NAME', 'smart_campus')
+MONGO_TIMEOUT_MS = int(os.getenv('MONGO_SERVER_SELECTION_TIMEOUT_MS', '5000'))
 
 EMAIL_REGEX = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
 
@@ -50,7 +56,13 @@ def main():
         sys.exit('Password must be at least 6 characters long')
 
     print(f'Connecting to database "{DB_NAME}"...')
-    client = MongoClient(MONGO_URI)
+    try:
+        client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=MONGO_TIMEOUT_MS)
+        client.admin.command('ping')
+    except Exception as e:
+        sys.exit(f'❌ Could not connect to MongoDB ({e}).\n'
+                 '   Please check your MONGO_URI, network connection, and MongoDB Atlas IP Access List.')
+
     collection = client[DB_NAME]['users']
 
     # Case-insensitive duplicate check
