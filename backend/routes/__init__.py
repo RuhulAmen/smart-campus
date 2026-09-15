@@ -6,6 +6,7 @@ from .facilities import facilities_bp
 from .announcements import announcements_bp
 from .issues import issues_bp
 from .dashboard import dashboard_bp
+from .health import health_bp
 
 def register_routes(app):
     # PASS THE MONGO DB TO THE BLUEPRINTS HERE (This fixes the circular import!)
@@ -14,6 +15,7 @@ def register_routes(app):
     announcements_bp.mongo = app.mongo
     issues_bp.mongo = app.mongo
     dashboard_bp.mongo = app.mongo
+    health_bp.mongo = app.mongo
 
     # Register the blueprints
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
@@ -21,3 +23,4 @@ def register_routes(app):
     app.register_blueprint(announcements_bp, url_prefix='/api/announcements')
     app.register_blueprint(issues_bp, url_prefix='/api/issues')
     app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
+    app.register_blueprint(health_bp, url_prefix='/api/health')

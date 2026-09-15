@@ -5,6 +5,11 @@ from dotenv import load_dotenv
 import os
 import sys
 import time
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Ensure backend directory is in sys.path so models, routes, and utils can be imported directly
 backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'backend'))
@@ -26,6 +31,10 @@ app = Flask(__name__)
 cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:5000,http://127.0.0.1:5000')
 cors_origins = [origin.strip() for origin in cors_origins.split(',') if origin.strip()]
 CORS(app, origins=cors_origins)
+
+# Rate limiting — import the shared instance so route modules can decorate endpoints
+from utils.limiter import limiter  # type: ignore
+limiter.init_app(app)
 
 # Load configuration from environment variables
 app.config['MONGO_URI'] = os.getenv('MONGO_URI', 'mongodb://localhost:27017/smart_campus')
@@ -52,8 +61,8 @@ try:
     app.mongo = PyMongo(app, serverSelectionTimeoutMS=MONGO_TIMEOUT_MS)
 except Exception as e:
     fallback_uri = os.getenv('MONGO_FALLBACK_URI', 'mongodb://localhost:27017/smart_campus')
-    print(f"❌ ERROR: MONGO_URI is unreachable: {e}")
-    print(f"❌ Fix MONGO_URI in backend/.env. Falling back to {fallback_uri} for now.")
+    logger.error("MONGO_URI is unreachable: %s", e)
+    logger.error("Fix MONGO_URI in backend/.env. Falling back to %s", fallback_uri)
     app.config['MONGO_URI'] = fallback_uri
     app.mongo = PyMongo(app, serverSelectionTimeoutMS=MONGO_TIMEOUT_MS)
 
@@ -63,9 +72,16 @@ FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), 'frontend
 # Import models and routes (resolved from backend directory added to sys.path above)
 from models import Facility  # type: ignore
 from routes import register_routes  # type: ignore
+from utils.db_indexes import ensure_indexes  # type: ignore
 
 # Register routes
 register_routes(app)
+
+# Create database indexes (idempotent — safe to call on every startup)
+try:
+    ensure_indexes(app.mongo)
+except Exception:
+    pass  # Logged inside ensure_indexes; don't block startup
 
 # Seed default data a single time (guarded so it works under any server/entrypoint)
 _data_initialized = False
@@ -98,9 +114,9 @@ def initialize_data():
         facility_model = Facility(app.mongo)
         facility_model.initialize_default_facilities()
         _data_initialized = True
-        print("✅ Default facilities initialized")
+        logger.info("Default facilities initialized")
     except Exception as e:
-        print(f"⚠️ Could not initialize default facilities (will retry): {e}")
+        logger.warning("Could not initialize default facilities (will retry): %s", e)
 
 
 # Serve frontend files

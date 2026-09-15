@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from models import Issue, Announcement
 from utils.helpers import token_required, admin_required
+from utils.limiter import limiter
 import re
 
 issues_bp = Blueprint('issues', __name__)
@@ -32,6 +33,7 @@ def get_issues():
 
 
 @issues_bp.route('/', methods=['POST'], strict_slashes=False)
+@limiter.limit("10 per hour")
 def create_issue():
     """Create a new issue report (Public)"""
     try:

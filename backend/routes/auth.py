@@ -3,6 +3,7 @@ from models import User
 from utils.helpers import generate_token, token_required
 import re
 import bcrypt
+from utils.limiter import limiter
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -25,6 +26,7 @@ def _public_user(user):
 
 
 @auth_bp.route('/signup', methods=['POST'])
+@limiter.limit("3 per minute")
 def signup():
     """User registration.
 
@@ -93,6 +95,7 @@ def signup():
 
 
 @auth_bp.route('/login', methods=['POST'])
+@limiter.limit("5 per minute")
 def login():
     """User login"""
     try:
