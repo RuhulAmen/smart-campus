@@ -60,9 +60,9 @@ except Exception as e:
 # Absolute path to the frontend directory
 FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), 'frontend'))
 
-# Import models and routes
-from models import Facility
-from routes import register_routes
+# Import models and routes (resolved from backend directory added to sys.path above)
+from models import Facility  # type: ignore
+from routes import register_routes  # type: ignore
 
 # Register routes
 register_routes(app)

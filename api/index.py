@@ -11,5 +11,5 @@ if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
 # Expose the Flask instance as 'app' for Vercel's serverless Python runtime
-from app import app
+from app import app  # type: ignore
 
