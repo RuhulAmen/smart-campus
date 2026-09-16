@@ -1,0 +1,64 @@
+name: Smart Campus CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install flake8
+
+      - name: Lint with flake8
+        run: |
+          # Stop the build if there are Python syntax errors or undefined names
+          flake8 backend/ app.py api/ --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Treat all other issues as warnings (don't fail the build)
+          flake8 backend/ app.py api/ --count --exit-zero --max-line-length=120 --statistics
+
+      - name: Verify app imports
+        env:
+          SECRET_KEY: test-secret-key-for-ci-only
+          MONGO_URI: mongodb://localhost:27017/smart_campus_test
+          DEBUG: 'false'
+        run: |
+          python -c "import app; print('✅ App imports successfully')"
+
+      - name: Verify all route registrations
+        env:
+          SECRET_KEY: test-secret-key-for-ci-only
+          MONGO_URI: mongodb://localhost:27017/smart_campus_test
+          DEBUG: 'false'
+        run: |
+          python -c "
+          import app
+          rules = list(app.app.url_map.iter_rules())
+          print(f'✅ {len(rules)} routes registered')
+          # Ensure critical routes exist
+          paths = [r.rule for r in rules]
+          assert '/api/auth/login' in paths, 'Missing /api/auth/login'
+          assert '/api/auth/signup' in paths, 'Missing /api/auth/signup'
+          assert '/api/facilities/' in paths, 'Missing /api/facilities/'
+          assert '/api/issues/' in paths, 'Missing /api/issues/'
+          assert '/api/announcements/' in paths, 'Missing /api/announcements/'
+          assert '/api/health/' in paths, 'Missing /api/health/'
+          assert '/api/dashboard/stats' in paths, 'Missing /api/dashboard/stats'
+          print('✅ All critical routes verified')
+          "

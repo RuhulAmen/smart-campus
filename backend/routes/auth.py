@@ -4,6 +4,8 @@ from utils.helpers import generate_token, token_required
 import re
 import bcrypt
 from utils.limiter import limiter
+from utils.validation import validate_request
+from schemas import SignupSchema, LoginSchema, ProfileUpdateSchema
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -35,26 +37,14 @@ def signup():
     never escalate themselves.
     """
     try:
-        data = request.get_json(silent=True) or {}
+        data, error = validate_request(SignupSchema)
+        if error:
+            return error
 
-        # Validate required fields
-        required_fields = ['full_name', 'email', 'student_id', 'password']
-        if not all(field in data for field in required_fields):
-            return jsonify({'error': 'Missing required fields'}), 400
-
-        full_name = str(data.get('full_name', '')).strip()
-        email = str(data.get('email', '')).strip()
-        student_id = str(data.get('student_id', '')).strip()
-        password = data.get('password', '')
-
-        if not full_name or not email or not student_id or not password:
-            return jsonify({'error': 'All fields are required'}), 400
-
-        if not _is_valid_email(email):
-            return jsonify({'error': 'Please enter a valid email address'}), 400
-
-        if len(password) < 6:
-            return jsonify({'error': 'Password must be at least 6 characters long'}), 400
+        full_name = data['full_name'].strip()
+        email = data['email'].strip()
+        student_id = data['student_id'].strip()
+        password = data['password']
 
         # Get user model instance
         user_model = User(auth_bp.mongo)
@@ -99,10 +89,9 @@ def signup():
 def login():
     """User login"""
     try:
-        data = request.get_json(silent=True) or {}
-
-        if not data.get('email') or not data.get('password'):
-            return jsonify({'error': 'Email and password required'}), 400
+        data, error = validate_request(LoginSchema)
+        if error:
+            return error
 
         user_model = User(auth_bp.mongo)
         user = user_model.verify_password(data['email'], data['password'])
@@ -166,47 +155,34 @@ def get_profile(current_user):
 def update_profile(current_user):
     """Update user profile"""
     try:
-        data = request.get_json(silent=True) or {}
+        data, error = validate_request(ProfileUpdateSchema)
+        if error:
+            return error
         user_model = User(auth_bp.mongo)
         current_id = current_user['_id']
 
         update_data = {}
 
-        # Full name
+        # Schema already validated types and lengths; now check uniqueness
         if 'full_name' in data:
-            full_name = str(data['full_name']).strip()
-            if not full_name:
-                return jsonify({'error': 'Full name cannot be empty'}), 400
-            update_data['full_name'] = full_name
+            update_data['full_name'] = data['full_name'].strip()
 
-        # Email (must remain unique and valid)
         if 'email' in data:
-            email = str(data['email']).strip()
-            if not email:
-                return jsonify({'error': 'Email cannot be empty'}), 400
-            if not _is_valid_email(email):
-                return jsonify({'error': 'Please enter a valid email address'}), 400
+            email = data['email'].strip()
             existing = user_model.find_by_email(email)
             if existing and str(existing['_id']) != current_id:
                 return jsonify({'error': 'Email already registered'}), 400
             update_data['email'] = email
 
-        # Student ID (must remain unique)
         if 'student_id' in data:
-            student_id = str(data['student_id']).strip()
-            if not student_id:
-                return jsonify({'error': 'Student ID cannot be empty'}), 400
+            student_id = data['student_id'].strip()
             existing = user_model.find_by_student_id(student_id)
             if existing and str(existing['_id']) != current_id:
                 return jsonify({'error': 'Student ID already registered'}), 400
             update_data['student_id'] = student_id
 
-        # Password (optional)
-        if 'password' in data and data['password']:
-            password = data['password']
-            if len(str(password)) < 6:
-                return jsonify({'error': 'Password must be at least 6 characters long'}), 400
-            hashed = bcrypt.hashpw(str(password).encode('utf-8'), bcrypt.gensalt())
+        if 'password' in data:
+            hashed = bcrypt.hashpw(str(data['password']).encode('utf-8'), bcrypt.gensalt())
             update_data['password'] = hashed
 
         if update_data:

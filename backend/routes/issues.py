@@ -2,6 +2,8 @@ from flask import Blueprint, request, jsonify
 from models import Issue, Announcement
 from utils.helpers import token_required, admin_required
 from utils.limiter import limiter
+from utils.validation import validate_request
+from schemas import IssueCreateSchema, IssueStatusUpdateSchema
 import re
 
 issues_bp = Blueprint('issues', __name__)
@@ -37,22 +39,14 @@ def get_issues():
 def create_issue():
     """Create a new issue report (Public)"""
     try:
-        data = request.get_json(silent=True) or {}
+        data, error = validate_request(IssueCreateSchema)
+        if error:
+            return error
 
-        required_fields = ['facility', 'title', 'description', 'reporter_name', 'reporter_email']
-        if not all(field in data for field in required_fields):
-            return jsonify({'error': 'Missing required fields'}), 400
-
-        title = str(data['title']).strip()
-        description = str(data['description']).strip()
-        reporter_name = str(data['reporter_name']).strip()
-        reporter_email = str(data['reporter_email']).strip()
-
-        if not title or not description or not reporter_name:
-            return jsonify({'error': 'All fields are required'}), 400
-
-        if not re.match(EMAIL_REGEX, reporter_email):
-            return jsonify({'error': 'Please enter a valid email address'}), 400
+        title = data['title'].strip()
+        description = data['description'].strip()
+        reporter_name = data['reporter_name'].strip()
+        reporter_email = data['reporter_email'].strip()
 
         issue_model = Issue(issues_bp.mongo)
         issue_id = issue_model.create_issue(
@@ -153,14 +147,9 @@ def get_issue(issue_id):
 def update_issue_status(current_user, issue_id):
     """Update issue status (Admin only)"""
     try:
-        data = request.get_json(silent=True) or {}
-
-        if not data.get('status'):
-            return jsonify({'error': 'Status is required'}), 400
-
-        valid_statuses = ['pending', 'in_progress', 'resolved', 'rejected']
-        if data['status'] not in valid_statuses:
-            return jsonify({'error': 'Invalid status'}), 400
+        data, error = validate_request(IssueStatusUpdateSchema)
+        if error:
+            return error
 
         issue_model = Issue(issues_bp.mongo)
 

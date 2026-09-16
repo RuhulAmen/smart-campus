@@ -1,6 +1,8 @@
 from flask import Blueprint, request, jsonify
 from models import Announcement
 from utils.helpers import token_required, admin_required
+from utils.validation import validate_request
+from schemas import AnnouncementCreateSchema, AnnouncementUpdateSchema
 
 announcements_bp = Blueprint('announcements', __name__)
 
@@ -63,11 +65,9 @@ def get_announcements_by_priority(priority):
 def create_announcement(current_user):
     """Create announcement (Admin only)"""
     try:
-        data = request.get_json(silent=True) or {}
-        
-        required_fields = ['title', 'description', 'priority', 'category']
-        if not all(field in data for field in required_fields):
-            return jsonify({'error': 'Missing required fields'}), 400
+        data, error = validate_request(AnnouncementCreateSchema)
+        if error:
+            return error
         
         announcement_model = Announcement(announcements_bp.mongo)
         announcement_id = announcement_model.create_announcement(
@@ -95,7 +95,9 @@ def create_announcement(current_user):
 def update_announcement(current_user, announcement_id):
     """Update announcement (Admin only)"""
     try:
-        data = request.get_json(silent=True) or {}
+        data, error = validate_request(AnnouncementUpdateSchema)
+        if error:
+            return error
         announcement_model = Announcement(announcements_bp.mongo)
         
         # Check if announcement exists
@@ -103,13 +105,8 @@ def update_announcement(current_user, announcement_id):
         if not announcement:
             return jsonify({'error': 'Announcement not found'}), 404
         
-        # Update announcement
-        update_data = {}
-        allowed_fields = ['title', 'description', 'priority', 'category']
-        
-        for field in allowed_fields:
-            if field in data:
-                update_data[field] = data[field]
+        # Schema already strips unknown fields; use validated data directly
+        update_data = {k: v for k, v in data.items() if v is not None}
         
         if update_data:
             announcement_model.update_announcement(announcement_id, update_data)

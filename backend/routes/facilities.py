@@ -1,6 +1,8 @@
 from flask import Blueprint, request, jsonify
 from models import Facility
 from utils.helpers import token_required, admin_required
+from utils.validation import validate_request
+from schemas import FacilityCreateSchema, FacilityUpdateSchema, FacilityStatusSchema
 
 facilities_bp = Blueprint('facilities', __name__)
 
@@ -42,11 +44,9 @@ def get_facility(facility_id):
 def create_facility(current_user):
     """Create a new facility (Admin only)"""
     try:
-        data = request.get_json(silent=True) or {}
-        
-        required_fields = ['name', 'location', 'description']
-        if not all(field in data for field in required_fields):
-            return jsonify({'error': 'Missing required fields'}), 400
+        data, error = validate_request(FacilityCreateSchema)
+        if error:
+            return error
         
         facility_model = Facility(facilities_bp.mongo)
         facility_id = facility_model.create_facility(
@@ -73,7 +73,9 @@ def create_facility(current_user):
 def update_facility(current_user, facility_id):
     """Update facility (Admin only)"""
     try:
-        data = request.get_json(silent=True) or {}
+        data, error = validate_request(FacilityUpdateSchema)
+        if error:
+            return error
         facility_model = Facility(facilities_bp.mongo)
         
         # Check if facility exists
@@ -81,13 +83,8 @@ def update_facility(current_user, facility_id):
         if not facility:
             return jsonify({'error': 'Facility not found'}), 404
         
-        # Update facility
-        update_data = {}
-        allowed_fields = ['name', 'location', 'description', 'status']
-        
-        for field in allowed_fields:
-            if field in data:
-                update_data[field] = data[field]
+        # Schema already strips unknown fields; use validated data directly
+        update_data = {k: v for k, v in data.items() if v is not None}
         
         if update_data:
             facility_model.update_facility(facility_id, update_data)
@@ -110,10 +107,9 @@ def update_facility(current_user, facility_id):
 def update_facility_status(current_user, facility_id):
     """Update facility status (Admin only)"""
     try:
-        data = request.get_json(silent=True) or {}
-        
-        if not data.get('status'):
-            return jsonify({'error': 'Status is required'}), 400
+        data, error = validate_request(FacilityStatusSchema)
+        if error:
+            return error
         
         facility_model = Facility(facilities_bp.mongo)
         
