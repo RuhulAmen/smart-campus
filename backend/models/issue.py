@@ -14,14 +14,15 @@ class Issue:
         else:
             self.collection = mongo['issues']
 
-    def create_issue(self, facility, title, description, reporter_name, reporter_email):
-        """Create a new issue report"""
+    def create_issue(self, facility, title, description, reporter_name, reporter_email, image_url=None):
+        """Create a new issue report with optional image attachment"""
         issue = {
             'facility': facility,
             'title': title,
             'description': description,
             'reporter_name': reporter_name,
             'reporter_email': reporter_email,
+            'image_url': image_url,
             'status': 'pending',  # pending, in_progress, resolved, rejected
             'date': datetime.utcnow().strftime('%Y-%m-%d'),
             'created_at': datetime.utcnow(),
@@ -31,9 +32,47 @@ class Issue:
         result = self.collection.insert_one(issue)
         return result.inserted_id
     
-    def get_all_issues(self, limit=100, skip=0):
-        """Get all issues sorted by date"""
-        return list(self.collection.find().sort('created_at', -1).skip(skip).limit(limit))
+    def get_all_issues(self, limit=100, skip=0, status=None, facility=None, search=None):
+        """Get issues sorted by date with optional filtering and search"""
+        import re
+        query = {}
+        if status:
+            query['status'] = status
+        if facility:
+            query['facility'] = facility
+        if search:
+            escaped = re.escape(search.strip())
+            regex = re.compile(escaped, re.IGNORECASE)
+            query['$or'] = [
+                {'title': regex},
+                {'description': regex},
+                {'reporter_name': regex},
+                {'reporter_email': regex},
+                {'facility': regex}
+            ]
+
+        return list(self.collection.find(query).sort('created_at', -1).skip(skip).limit(limit))
+
+    def count_filtered_issues(self, status=None, facility=None, search=None):
+        """Count issues matching criteria for pagination"""
+        import re
+        query = {}
+        if status:
+            query['status'] = status
+        if facility:
+            query['facility'] = facility
+        if search:
+            escaped = re.escape(search.strip())
+            regex = re.compile(escaped, re.IGNORECASE)
+            query['$or'] = [
+                {'title': regex},
+                {'description': regex},
+                {'reporter_name': regex},
+                {'reporter_email': regex},
+                {'facility': regex}
+            ]
+
+        return self.collection.count_documents(query)
     
     def get_issue_by_id(self, issue_id):
         """Get issue by ID"""

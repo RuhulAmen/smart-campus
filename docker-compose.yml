@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smart_campus_web
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - MONGO_URI=mongodb://mongo:27017/smart_campus
+      - SECRET_KEY=d2e44399b1fd99492710bfd216199a6a5368d82bd75f667d63d10c4e9177515b
+      - DEBUG=false
+      - JWT_EXPIRATION_HOURS=24
+      - MONGO_SERVER_SELECTION_TIMEOUT_MS=5000
+      - CORS_ORIGINS=http://localhost:5000,http://127.0.0.1:5000
+    depends_on:
+      mongo:
+        condition: service_healthy
+    volumes:
+      - campus_uploads:/app/uploads
+    networks:
+      - campus_net
+
+  mongo:
+    image: mongo:6.0
+    container_name: smart_campus_mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - campus_net
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+volumes:
+  mongo_data:
+    name: smart_campus_mongo_data
+  campus_uploads:
+    name: smart_campus_uploads
+
+networks:
+  campus_net:
+    name: smart_campus_network
+

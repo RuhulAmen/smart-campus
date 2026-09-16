@@ -69,6 +69,11 @@ except Exception as e:
 # Absolute path to the frontend directory
 FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), 'frontend'))
 
+# Absolute path to the uploads directory for issue photo attachments
+UPLOAD_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), 'uploads'))
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
 # Import models and routes (resolved from backend directory added to sys.path above)
 from models import Facility  # type: ignore
 from routes import register_routes  # type: ignore
@@ -123,6 +128,11 @@ def initialize_data():
 @app.route('/')
 def serve_frontend():
     return send_from_directory(FRONTEND_DIR, 'index.html')
+
+
+@app.route('/uploads/<path:filename>')
+def serve_upload(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
 
 
 @app.route('/<path:path>')

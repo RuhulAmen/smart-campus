@@ -12,6 +12,7 @@ class IssueCreateSchema(Schema):
     description = fields.String(required=True, validate=validate.Length(min=1, max=5000))
     reporter_name = fields.String(required=True, validate=validate.Length(min=1, max=100))
     reporter_email = fields.String(required=True, validate=validate.Length(min=5, max=255))
+    image_url = fields.String(allow_none=True, validate=validate.Length(max=500))
 
     @validates('reporter_email')
     def validate_email(self, value, **kwargs):

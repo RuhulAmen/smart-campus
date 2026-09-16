@@ -162,14 +162,56 @@ async function deleteFacility(facilityId) {
     return result;
 }
 
+// File Upload Function
+async function uploadFile(file) {
+    const url = `${API_BASE_URL}/uploads`;
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const headers = {};
+    const token = localStorage.getItem('token');
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: formData
+    });
+
+    let result;
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+        result = await response.json();
+    } else {
+        const text = await response.text();
+        result = { error: text || `HTTP ${response.status}: ${response.statusText}` };
+    }
+
+    if (!response.ok) {
+        throw new Error(result.error || 'File upload failed');
+    }
+
+    return result;
+}
+
 // Announcement Functions
-async function getAnnouncements() {
+async function getAnnouncements(params = {}) {
     try {
-        const result = await apiRequest('/announcements');
-        return result.announcements || [];
+        const query = new URLSearchParams();
+        if (params.page) query.set('page', params.page);
+        if (params.limit) query.set('limit', params.limit);
+        if (params.priority && params.priority !== 'all') query.set('priority', params.priority);
+        if (params.category && params.category !== 'all') query.set('category', params.category);
+        if (params.search) query.set('search', params.search);
+
+        const qs = query.toString() ? `?${query.toString()}` : '';
+        const result = await apiRequest(`/announcements${qs}`);
+        return result;
     } catch (error) {
         console.error('Error fetching announcements:', error);
-        return [];
+        return { announcements: [], total: 0, page: 1, pages: 1 };
     }
 }
 
@@ -200,13 +242,21 @@ async function reportIssue(issueData) {
     return await apiRequest('/issues', 'POST', issueData);
 }
 
-async function getIssues() {
+async function getIssues(params = {}) {
     try {
-        const result = await apiRequest('/issues');
-        return result.issues || [];
+        const query = new URLSearchParams();
+        if (params.page) query.set('page', params.page);
+        if (params.limit) query.set('limit', params.limit);
+        if (params.status && params.status !== 'all') query.set('status', params.status);
+        if (params.facility && params.facility !== 'all') query.set('facility', params.facility);
+        if (params.search) query.set('search', params.search);
+
+        const qs = query.toString() ? `?${query.toString()}` : '';
+        const result = await apiRequest(`/issues${qs}`);
+        return result;
     } catch (error) {
         console.error('Error fetching issues:', error);
-        return [];
+        return { issues: [], total: 0, page: 1, pages: 1 };
     }
 }
 
@@ -233,6 +283,42 @@ async function trackIssues(email) {
 async function updateIssueStatus(issueId, status) {
     const result = await apiRequest(`/issues/${issueId}/status`, 'PATCH', { status });
     showToast('✅ Issue status updated!', 'success');
+    return result;
+}
+
+// Admin User Management Functions
+async function getAdminUsers(params = {}) {
+    try {
+        const query = new URLSearchParams();
+        if (params.page) query.set('page', params.page);
+        if (params.limit) query.set('limit', params.limit);
+        if (params.role && params.role !== 'all') query.set('role', params.role);
+        if (params.status && params.status !== 'all') query.set('status', params.status);
+        if (params.search) query.set('search', params.search);
+
+        const qs = query.toString() ? `?${query.toString()}` : '';
+        return await apiRequest(`/admin/users${qs}`);
+    } catch (error) {
+        console.error('Error fetching admin users:', error);
+        throw error;
+    }
+}
+
+async function updateUserRole(userId, role) {
+    const result = await apiRequest(`/admin/users/${userId}/role`, 'PATCH', { role });
+    showToast(`✅ ${result.message || 'User role updated'}`, 'success');
+    return result;
+}
+
+async function updateUserStatus(userId, isActive) {
+    const result = await apiRequest(`/admin/users/${userId}/status`, 'PATCH', { is_active: isActive });
+    showToast(`✅ ${result.message || 'User status updated'}`, 'success');
+    return result;
+}
+
+async function deleteUser(userId) {
+    const result = await apiRequest(`/admin/users/${userId}`, 'DELETE');
+    showToast(`✅ ${result.message || 'User deleted'}`, 'success');
     return result;
 }
 
@@ -381,10 +467,22 @@ window.getUserProfile = getUserProfile;
 window.updateUserProfile = updateUserProfile;
 window.showToast = showToast;
 window.updateNavigation = updateNavigation;
+window.uploadFile = uploadFile;
+window.getAdminUsers = getAdminUsers;
+window.updateUserRole = updateUserRole;
+window.updateUserStatus = updateUserStatus;
+window.deleteUser = deleteUser;
 window.validateEmail = validateEmail;
 window.validatePassword = validatePassword;
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function () {
     updateNavigation();
+
+    // Register Service Worker for PWA & offline support
+    if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+        navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('📱 PWA Service Worker active:', reg.scope))
+            .catch(err => console.warn('PWA Service Worker registration skipped:', err));
+    }
 });

@@ -9,6 +9,8 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&display=swap"
         rel="stylesheet">
+    <meta name="theme-color" content="#0b31c7">
+    <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="CSS/style.css">
 </head>
 
@@ -59,6 +61,13 @@
                         <label for="reporter_email">Email *</label>
                         <input type="email" id="reporter_email" placeholder="your@email.com" required>
                     </div>
+                <div style="margin-top: 16px; margin-bottom: 20px;">
+                    <label for="issue_image">📸 Attach Photo (Optional, max 5MB)</label>
+                    <input type="file" id="issue_image" accept="image/png, image/jpeg, image/jpg, image/webp, image/gif" style="margin-top: 6px; width: 100%;">
+                    <div id="imagePreviewContainer" style="display: none; margin-top: 12px; position: relative; max-width: 240px;">
+                        <img id="imagePreview" src="" alt="Photo Preview" style="width: 100%; max-height: 160px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border, #2d3748);">
+                        <button type="button" id="removeImageBtn" style="position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.8); color: #fff; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center;">✕</button>
+                    </div>
                 </div>
 
                 <button type="submit">📤 Submit Report</button>
@@ -98,6 +107,38 @@
                 console.error('Error loading facilities for report form:', error);
             }
 
+            // Image attachment preview handling
+            const imageInput = document.getElementById('issue_image');
+            const previewContainer = document.getElementById('imagePreviewContainer');
+            const previewImg = document.getElementById('imagePreview');
+            const removeImageBtn = document.getElementById('removeImageBtn');
+
+            imageInput.addEventListener('change', function () {
+                const file = this.files[0];
+                if (file) {
+                    if (file.size > 5 * 1024 * 1024) {
+                        showToast('Image file size exceeds 5MB limit', 'error');
+                        this.value = '';
+                        previewContainer.style.display = 'none';
+                        return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        previewImg.src = e.target.result;
+                        previewContainer.style.display = 'inline-block';
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    previewContainer.style.display = 'none';
+                }
+            });
+
+            removeImageBtn.addEventListener('click', function () {
+                imageInput.value = '';
+                previewContainer.style.display = 'none';
+                previewImg.src = '';
+            });
+
             form.addEventListener('submit', async function (e) {
                 e.preventDefault();
 
@@ -107,6 +148,7 @@
                 const description = document.getElementById('description').value.trim();
                 const reporter_name = document.getElementById('reporter_name').value.trim();
                 const reporter_email = document.getElementById('reporter_email').value.trim();
+                const selectedFile = imageInput.files[0];
 
                 // Validate
                 if (!facility || !title || !description || !reporter_name || !reporter_email) {
@@ -122,20 +164,30 @@
                 // Show loading state
                 const submitBtn = form.querySelector('button[type="submit"]');
                 const originalText = submitBtn.textContent;
-                submitBtn.textContent = 'Submitting...';
                 submitBtn.disabled = true;
 
                 try {
+                    let image_url = null;
+                    if (selectedFile) {
+                        submitBtn.textContent = 'Uploading photo...';
+                        const uploadRes = await uploadFile(selectedFile);
+                        image_url = uploadRes.url;
+                    }
+
+                    submitBtn.textContent = 'Submitting report...';
                     const result = await reportIssue({
                         facility,
                         title,
                         description,
                         reporter_name,
-                        reporter_email
+                        reporter_email,
+                        image_url
                     });
 
                     if (result) {
                         form.reset();
+                        previewContainer.style.display = 'none';
+                        previewImg.src = '';
                         showToast('✅ Issue reported successfully!', 'success');
                     }
                 } catch (error) {

@@ -31,11 +31,41 @@ class Announcement:
         result = self.collection.insert_one(announcement)
         return result.inserted_id
     
-    def get_all_announcements(self, limit=100, skip=0):
-        """Get all active announcements sorted by date"""
-        return list(self.collection.find(
-            {'status': 'active'}
-        ).sort('created_at', -1).skip(skip).limit(limit))
+    def get_all_announcements(self, limit=100, skip=0, priority=None, category=None, search=None):
+        """Get active announcements sorted by date with optional filtering and search"""
+        import re
+        query = {'status': 'active'}
+        if priority:
+            query['priority'] = priority
+        if category:
+            query['category'] = category
+        if search:
+            escaped = re.escape(search.strip())
+            regex = re.compile(escaped, re.IGNORECASE)
+            query['$or'] = [
+                {'title': regex},
+                {'description': regex},
+                {'category': regex}
+            ]
+        return list(self.collection.find(query).sort('created_at', -1).skip(skip).limit(limit))
+
+    def count_filtered_announcements(self, priority=None, category=None, search=None):
+        """Count active announcements matching criteria"""
+        import re
+        query = {'status': 'active'}
+        if priority:
+            query['priority'] = priority
+        if category:
+            query['category'] = category
+        if search:
+            escaped = re.escape(search.strip())
+            regex = re.compile(escaped, re.IGNORECASE)
+            query['$or'] = [
+                {'title': regex},
+                {'description': regex},
+                {'category': regex}
+            ]
+        return self.collection.count_documents(query)
     
     def get_announcement_by_id(self, announcement_id):
         """Get announcement by ID"""

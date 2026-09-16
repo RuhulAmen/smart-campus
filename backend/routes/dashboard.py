@@ -36,6 +36,9 @@ def get_dashboard_stats(current_user):
             'total_announcements': announcement_model.collection.count_documents({'status': 'active'}),
             'total_issues': issue_model.collection.count_documents({}),
             'pending_issues': issue_model.collection.count_documents({'status': 'pending'}),
+            'in_progress_issues': issue_model.collection.count_documents({'status': 'in_progress'}),
+            'resolved_issues': issue_model.collection.count_documents({'status': 'resolved'}),
+            'rejected_issues': issue_model.collection.count_documents({'status': 'rejected'}),
             'recent_announcements': announcement_model.get_recent_announcements(limit=3)
         }
         

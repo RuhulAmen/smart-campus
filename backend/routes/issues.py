@@ -14,22 +14,47 @@ EMAIL_REGEX = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
 # BEFORE '/<issue_id>' so Flask does not capture them as an issue ID.
 
 
+import math
+from utils.notifications import notify_issue_reported, notify_issue_status_updated
+
 # strict_slashes=False: the SPA calls these without a trailing slash, so without
 # it every request gets an extra 308 redirect (and breaks cross-origin POSTs).
 @issues_bp.route('/', methods=['GET'], strict_slashes=False)
 def get_issues():
-    """Get all issues"""
+    """Get issues with pagination, search, and facility/status filtering"""
     try:
-        limit = int(request.args.get('limit', 100))
-        skip = int(request.args.get('skip', 0))
+        page = max(1, int(request.args.get('page', 1)))
+        limit = min(100, max(1, int(request.args.get('limit', 20))))
+        status = request.args.get('status')
+        facility = request.args.get('facility')
+        search = request.args.get('search')
+        skip = (page - 1) * limit
 
         issue_model = Issue(issues_bp.mongo)
-        issues = issue_model.get_all_issues(limit=limit, skip=skip)
+        issues = issue_model.get_all_issues(
+            limit=limit,
+            skip=skip,
+            status=status,
+            facility=facility,
+            search=search
+        )
+        total = issue_model.count_filtered_issues(
+            status=status,
+            facility=facility,
+            search=search
+        )
+        pages = max(1, math.ceil(total / limit)) if total > 0 else 1
 
         for issue in issues:
             issue['_id'] = str(issue['_id'])
 
-        return jsonify({'issues': issues}), 200
+        return jsonify({
+            'issues': issues,
+            'total': total,
+            'page': page,
+            'pages': pages,
+            'limit': limit
+        }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -47,6 +72,7 @@ def create_issue():
         description = data['description'].strip()
         reporter_name = data['reporter_name'].strip()
         reporter_email = data['reporter_email'].strip()
+        image_url = data.get('image_url')
 
         issue_model = Issue(issues_bp.mongo)
         issue_id = issue_model.create_issue(
@@ -54,7 +80,8 @@ def create_issue():
             title=title,
             description=description,
             reporter_name=reporter_name,
-            reporter_email=reporter_email
+            reporter_email=reporter_email,
+            image_url=image_url
         )
 
         issue = issue_model.get_issue_by_id(issue_id)
@@ -69,6 +96,12 @@ def create_issue():
             category='Issue Report',
             created_by='system'
         )
+
+        # Trigger email notification to reporter (simulated or real SMTP)
+        try:
+            notify_issue_reported(issue)
+        except Exception:
+            pass
 
         return jsonify({
             'message': 'Issue reported successfully',
@@ -172,6 +205,12 @@ def update_issue_status(current_user, issue_id):
                 category='Issue Update',
                 created_by=current_user['_id']
             )
+
+        # Notify reporter of status update
+        try:
+            notify_issue_status_updated(issue, data['status'])
+        except Exception:
+            pass
 
         return jsonify({
             'message': 'Issue status updated successfully',

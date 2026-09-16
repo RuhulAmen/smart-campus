@@ -6,23 +6,47 @@ from schemas import AnnouncementCreateSchema, AnnouncementUpdateSchema
 
 announcements_bp = Blueprint('announcements', __name__)
 
+import math
+
 # strict_slashes=False: the SPA calls these without a trailing slash, so without
 # it every request gets an extra 308 redirect (and breaks cross-origin POSTs).
 @announcements_bp.route('/', methods=['GET'], strict_slashes=False)
 def get_announcements():
-    """Get all announcements"""
+    """Get announcements with pagination, search, and priority/category filtering"""
     try:
-        limit = int(request.args.get('limit', 100))
-        skip = int(request.args.get('skip', 0))
+        page = max(1, int(request.args.get('page', 1)))
+        limit = min(100, max(1, int(request.args.get('limit', 20))))
+        priority = request.args.get('priority')
+        category = request.args.get('category')
+        search = request.args.get('search')
+        skip = (page - 1) * limit
         
         announcement_model = Announcement(announcements_bp.mongo)
-        announcements = announcement_model.get_all_announcements(limit=limit, skip=skip)
+        announcements = announcement_model.get_all_announcements(
+            limit=limit,
+            skip=skip,
+            priority=priority,
+            category=category,
+            search=search
+        )
+        total = announcement_model.count_filtered_announcements(
+            priority=priority,
+            category=category,
+            search=search
+        )
+        pages = max(1, math.ceil(total / limit)) if total > 0 else 1
         
         # Convert ObjectId to string
         for announcement in announcements:
             announcement['_id'] = str(announcement['_id'])
         
-        return jsonify({'announcements': announcements}), 200
+        return jsonify({
+            'announcements': announcements,
+            'total': total,
+            'page': page,
+            'pages': pages,
+            'limit': limit
+        }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

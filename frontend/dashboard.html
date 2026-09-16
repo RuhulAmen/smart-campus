@@ -9,6 +9,8 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&display=swap"
         rel="stylesheet">
+    <meta name="theme-color" content="#0b31c7">
+    <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="CSS/style.css">
 </head>
 
@@ -48,6 +50,110 @@
             <div class="stat-card">
                 <span class="stat-number status-closed" id="reportedIssues">0</span>
                 <span class="stat-label">Issues Reported</span>
+            </div>
+        </div>
+
+        <!-- Visual Analytics Section (Phase 3) -->
+        <div class="analytics-section">
+            <h2>📊 Campus Analytics</h2>
+            <div class="analytics-grid">
+                <!-- Facility Health Donut Card -->
+                <div class="analytics-card">
+                    <div class="analytics-card-header">
+                        <h3>Facility Health</h3>
+                        <span class="badge" id="facilityHealthSummary">0 Total</span>
+                    </div>
+                    <div class="donut-chart-container">
+                        <div class="donut-svg-wrapper">
+                            <svg class="donut-svg" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="40" stroke="#171a20" stroke-width="18" fill="none" />
+                                <circle id="donutOperational" class="donut-segment" cx="50" cy="50" r="40" stroke="#3ddc84" stroke-dasharray="0 251.3" stroke-dashoffset="0" />
+                                <circle id="donutMaintenance" class="donut-segment" cx="50" cy="50" r="40" stroke="#eca634" stroke-dasharray="0 251.3" stroke-dashoffset="0" />
+                                <circle id="donutClosed" class="donut-segment" cx="50" cy="50" r="40" stroke="#e5484d" stroke-dasharray="0 251.3" stroke-dashoffset="0" />
+                            </svg>
+                            <div class="donut-center-text">
+                                <div class="donut-center-val" id="donutPercent">0%</div>
+                                <div class="donut-center-sub">Operational</div>
+                            </div>
+                        </div>
+                        <div class="chart-legend">
+                            <div class="legend-item">
+                                <span class="legend-indicator">
+                                    <span class="legend-dot" style="background-color: #3ddc84;"></span> Operational
+                                </span>
+                                <span class="legend-count" id="legendOpCount">0</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-indicator">
+                                    <span class="legend-dot" style="background-color: #eca634;"></span> Maintenance
+                                </span>
+                                <span class="legend-count" id="legendMaintCount">0</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-indicator">
+                                    <span class="legend-dot" style="background-color: #e5484d;"></span> Closed
+                                </span>
+                                <span class="legend-count" id="legendClosedCount">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Issue Pipeline Card -->
+                <div class="analytics-card">
+                    <div class="analytics-card-header">
+                        <h3>Issue Resolution Pipeline</h3>
+                        <span class="badge" id="resolutionRateBadge">0% Resolved</span>
+                    </div>
+                    <div class="pipeline-container">
+                        <!-- Multi-segment visual bar -->
+                        <div class="stacked-bar-wrapper">
+                            <div id="stackResolved" class="stacked-segment" style="width: 0%; background-color: #3ddc84;"></div>
+                            <div id="stackInProgress" class="stacked-segment" style="width: 0%; background-color: #58a6ff;"></div>
+                            <div id="stackPending" class="stacked-segment" style="width: 0%; background-color: #e3b341;"></div>
+                            <div id="stackRejected" class="stacked-segment" style="width: 0%; background-color: #8b949e;"></div>
+                        </div>
+                        <!-- Individual breakdown rows -->
+                        <div class="pipeline-rows">
+                            <div class="pipeline-row">
+                                <span class="pipeline-label">
+                                    <span class="legend-dot" style="background-color: #3ddc84;"></span> Resolved
+                                </span>
+                                <div class="pipeline-bar-bg">
+                                    <div id="pipeResolvedBar" class="pipeline-bar-fill" style="width: 0%; background-color: #3ddc84;"></div>
+                                </div>
+                                <span class="pipeline-count" id="pipeResolvedCount">0</span>
+                            </div>
+                            <div class="pipeline-row">
+                                <span class="pipeline-label">
+                                    <span class="legend-dot" style="background-color: #58a6ff;"></span> In Progress
+                                </span>
+                                <div class="pipeline-bar-bg">
+                                    <div id="pipeInProgressBar" class="pipeline-bar-fill" style="width: 0%; background-color: #58a6ff;"></div>
+                                </div>
+                                <span class="pipeline-count" id="pipeInProgressCount">0</span>
+                            </div>
+                            <div class="pipeline-row">
+                                <span class="pipeline-label">
+                                    <span class="legend-dot" style="background-color: #e3b341;"></span> Pending
+                                </span>
+                                <div class="pipeline-bar-bg">
+                                    <div id="pipePendingBar" class="pipeline-bar-fill" style="width: 0%; background-color: #e3b341;"></div>
+                                </div>
+                                <span class="pipeline-count" id="pipePendingCount">0</span>
+                            </div>
+                            <div class="pipeline-row">
+                                <span class="pipeline-label">
+                                    <span class="legend-dot" style="background-color: #8b949e;"></span> Rejected
+                                </span>
+                                <div class="pipeline-bar-bg">
+                                    <div id="pipeRejectedBar" class="pipeline-bar-fill" style="width: 0%; background-color: #8b949e;"></div>
+                                </div>
+                                <span class="pipeline-count" id="pipeRejectedCount">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -109,6 +215,9 @@
                     document.getElementById('maintenanceFacilities').textContent = stats.maintenance_facilities || 0;
                     document.getElementById('reportedIssues').textContent = stats.total_issues || 0;
 
+                    // Update Visual Analytics Charts (Phase 3)
+                    updateAnalytics(stats);
+
                     // Load recent announcements
                     const announcements = stats.recent_announcements || [];
                     const container = document.getElementById('recentAnnouncements');
@@ -129,6 +238,115 @@
                 showToast('Error loading dashboard data', 'error');
             }
         });
+
+        function updateAnalytics(stats) {
+            const CIRCUMFERENCE = 2 * Math.PI * 40; // ~251.327
+
+            // --- Facility Health Donut ---
+            const totalFac = stats.total_facilities || 0;
+            const opFac = stats.operational_facilities || 0;
+            const maintFac = stats.maintenance_facilities || 0;
+            const closedFac = stats.closed_facilities || 0;
+
+            const facSummaryEl = document.getElementById('facilityHealthSummary');
+            if (facSummaryEl) facSummaryEl.textContent = `${totalFac} Total`;
+            
+            const legendOpEl = document.getElementById('legendOpCount');
+            if (legendOpEl) legendOpEl.textContent = opFac;
+            const legendMaintEl = document.getElementById('legendMaintCount');
+            if (legendMaintEl) legendMaintEl.textContent = maintFac;
+            const legendClosedEl = document.getElementById('legendClosedCount');
+            if (legendClosedEl) legendClosedEl.textContent = closedFac;
+
+            const donutPctEl = document.getElementById('donutPercent');
+            const opEl = document.getElementById('donutOperational');
+            const maintEl = document.getElementById('donutMaintenance');
+            const closedEl = document.getElementById('donutClosed');
+
+            if (totalFac > 0) {
+                const opPct = Math.round((opFac / totalFac) * 100);
+                if (donutPctEl) donutPctEl.textContent = `${opPct}%`;
+
+                const opLen = (opFac / totalFac) * CIRCUMFERENCE;
+                const maintLen = (maintFac / totalFac) * CIRCUMFERENCE;
+                const closedLen = (closedFac / totalFac) * CIRCUMFERENCE;
+
+                if (opEl) {
+                    opEl.setAttribute('stroke-dasharray', `${opLen.toFixed(1)} ${CIRCUMFERENCE.toFixed(1)}`);
+                    opEl.setAttribute('stroke-dashoffset', '0');
+                }
+                if (maintEl) {
+                    maintEl.setAttribute('stroke-dasharray', `${maintLen.toFixed(1)} ${CIRCUMFERENCE.toFixed(1)}`);
+                    maintEl.setAttribute('stroke-dashoffset', `${(-opLen).toFixed(1)}`);
+                }
+                if (closedEl) {
+                    closedEl.setAttribute('stroke-dasharray', `${closedLen.toFixed(1)} ${CIRCUMFERENCE.toFixed(1)}`);
+                    closedEl.setAttribute('stroke-dashoffset', `${(-(opLen + maintLen)).toFixed(1)}`);
+                }
+            } else {
+                if (donutPctEl) donutPctEl.textContent = '0%';
+                if (opEl) opEl.setAttribute('stroke-dasharray', `0 ${CIRCUMFERENCE.toFixed(1)}`);
+                if (maintEl) maintEl.setAttribute('stroke-dasharray', `0 ${CIRCUMFERENCE.toFixed(1)}`);
+                if (closedEl) closedEl.setAttribute('stroke-dasharray', `0 ${CIRCUMFERENCE.toFixed(1)}`);
+            }
+
+            // --- Issue Resolution Pipeline ---
+            const totalIssues = stats.total_issues || 0;
+            const resolved = stats.resolved_issues || 0;
+            const inProgress = stats.in_progress_issues || 0;
+            const pending = stats.pending_issues || 0;
+            const rejected = stats.rejected_issues || 0;
+
+            const resCountEl = document.getElementById('pipeResolvedCount');
+            if (resCountEl) resCountEl.textContent = resolved;
+            const inProgCountEl = document.getElementById('pipeInProgressCount');
+            if (inProgCountEl) inProgCountEl.textContent = inProgress;
+            const pendCountEl = document.getElementById('pipePendingCount');
+            if (pendCountEl) pendCountEl.textContent = pending;
+            const rejCountEl = document.getElementById('pipeRejectedCount');
+            if (rejCountEl) rejCountEl.textContent = rejected;
+
+            const resBadgeEl = document.getElementById('resolutionRateBadge');
+            const stackRes = document.getElementById('stackResolved');
+            const stackProg = document.getElementById('stackInProgress');
+            const stackPend = document.getElementById('stackPending');
+            const stackRej = document.getElementById('stackRejected');
+
+            const barRes = document.getElementById('pipeResolvedBar');
+            const barProg = document.getElementById('pipeInProgressBar');
+            const barPend = document.getElementById('pipePendingBar');
+            const barRej = document.getElementById('pipeRejectedBar');
+
+            if (totalIssues > 0) {
+                const resRate = Math.round((resolved / totalIssues) * 100);
+                if (resBadgeEl) resBadgeEl.textContent = `${resRate}% Resolved`;
+
+                const resPct = (resolved / totalIssues) * 100;
+                const progPct = (inProgress / totalIssues) * 100;
+                const pendPct = (pending / totalIssues) * 100;
+                const rejPct = (rejected / totalIssues) * 100;
+
+                if (stackRes) stackRes.style.width = `${resPct}%`;
+                if (stackProg) stackProg.style.width = `${progPct}%`;
+                if (stackPend) stackPend.style.width = `${pendPct}%`;
+                if (stackRej) stackRej.style.width = `${rejPct}%`;
+
+                if (barRes) barRes.style.width = `${resPct}%`;
+                if (barProg) barProg.style.width = `${progPct}%`;
+                if (barPend) barPend.style.width = `${pendPct}%`;
+                if (barRej) barRej.style.width = `${rejPct}%`;
+            } else {
+                if (resBadgeEl) resBadgeEl.textContent = '0% Resolved';
+                if (stackRes) stackRes.style.width = '0%';
+                if (stackProg) stackProg.style.width = '0%';
+                if (stackPend) stackPend.style.width = '0%';
+                if (stackRej) stackRej.style.width = '0%';
+                if (barRes) barRes.style.width = '0%';
+                if (barProg) barProg.style.width = '0%';
+                if (barPend) barPend.style.width = '0%';
+                if (barRej) barRej.style.width = '0%';
+            }
+        }
     </script>
 </body>
 

@@ -35,7 +35,7 @@ jobs:
 
       - name: Verify app imports
         env:
-          SECRET_KEY: test-secret-key-for-ci-only
+          SECRET_KEY: c1a2b3c4d5e6f708192a3b4c5d6e7f80a1b2c3d4e5f60718293a4b5c6d7e8f90
           MONGO_URI: mongodb://localhost:27017/smart_campus_test
           DEBUG: 'false'
         run: |
@@ -43,7 +43,7 @@ jobs:
 
       - name: Verify all route registrations
         env:
-          SECRET_KEY: test-secret-key-for-ci-only
+          SECRET_KEY: c1a2b3c4d5e6f708192a3b4c5d6e7f80a1b2c3d4e5f60718293a4b5c6d7e8f90
           MONGO_URI: mongodb://localhost:27017/smart_campus_test
           DEBUG: 'false'
         run: |
@@ -60,5 +60,16 @@ jobs:
           assert '/api/announcements/' in paths, 'Missing /api/announcements/'
           assert '/api/health/' in paths, 'Missing /api/health/'
           assert '/api/dashboard/stats' in paths, 'Missing /api/dashboard/stats'
+          assert '/api/uploads/' in paths, 'Missing /api/uploads/'
+          assert '/api/admin/users' in paths, 'Missing /api/admin/users'
           print('✅ All critical routes verified')
           "
+
+      - name: Run automated test suite
+        env:
+          SECRET_KEY: c1a2b3c4d5e6f708192a3b4c5d6e7f80a1b2c3d4e5f60718293a4b5c6d7e8f90
+          MONGO_URI: mongodb://localhost:27017/smart_campus_test
+          DEBUG: 'false'
+        run: |
+          python -m unittest discover -s tests -v
+

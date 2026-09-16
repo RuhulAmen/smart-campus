@@ -9,6 +9,8 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&display=swap"
         rel="stylesheet">
+    <meta name="theme-color" content="#0b31c7">
+    <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="CSS/style.css">
 </head>
 
@@ -55,6 +57,8 @@
                 Loading announcements...
             </div>
         </div>
+
+        <div id="announcementsPagination" class="pagination-controls" style="margin-top: 24px; padding: 0 16px;"></div>
     </main>
 
     <footer>
@@ -63,22 +67,55 @@
 
     <script src="js/app.js"></script>
     <script>
-        let allAnnouncements = [];
+        let currentPage = 1;
 
         document.addEventListener('DOMContentLoaded', function () {
             updateNavigation();
-            loadAnnouncements();
+            loadAnnouncements(1);
 
-            document.getElementById('filterPriority').addEventListener('change', filterAndSearch);
-            document.getElementById('searchAnnouncements').addEventListener('input', filterAndSearch);
+            document.getElementById('filterPriority').addEventListener('change', () => loadAnnouncements(1));
+            
+            let searchTimeout;
+            document.getElementById('searchAnnouncements').addEventListener('input', () => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => loadAnnouncements(1), 300);
+            });
         });
 
-        async function loadAnnouncements() {
+        async function loadAnnouncements(page = 1) {
+            currentPage = page;
             const container = document.getElementById('announcementsContainer');
+            const pagination = document.getElementById('announcementsPagination');
+            const priority = document.getElementById('filterPriority').value;
+            const search = document.getElementById('searchAnnouncements').value.trim();
 
             try {
-                allAnnouncements = await getAnnouncements();
-                renderAnnouncements(allAnnouncements);
+                const res = await getAnnouncements({
+                    page,
+                    limit: 9,
+                    priority,
+                    search
+                });
+
+                const announcements = Array.isArray(res) ? res : (res.announcements || []);
+                const total = res.total !== undefined ? res.total : announcements.length;
+                const pages = res.pages || 1;
+
+                renderAnnouncements(announcements);
+
+                if (pagination) {
+                    if (total > 0) {
+                        pagination.innerHTML = `
+                            <span>Page ${page} of ${pages} (${total} announcement${total === 1 ? '' : 's'})</span>
+                            <div class="pagination-btns">
+                                <button class="btn-small btn-secondary" onclick="loadAnnouncements(${page - 1})" ${page <= 1 ? 'disabled' : ''}>← Prev</button>
+                                <button class="btn-small btn-secondary" onclick="loadAnnouncements(${page + 1})" ${page >= pages ? 'disabled' : ''}>Next →</button>
+                            </div>
+                        `;
+                    } else {
+                        pagination.innerHTML = '';
+                    }
+                }
             } catch (error) {
                 console.error('Error loading announcements:', error);
                 container.innerHTML = `
@@ -99,7 +136,7 @@
                     <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">
                         <span style="font-size: 3rem; display: block; margin-bottom: 16px;">📭</span>
                         <h3 style="color: var(--text-main);">No announcements found</h3>
-                        <p>Check back later for updates</p>
+                        <p>Try adjusting your search query or filter</p>
                     </div>
                 `;
                 return;
@@ -130,34 +167,13 @@
             }).join('');
         }
 
-        function filterAndSearch() {
-            const priority = document.getElementById('filterPriority').value;
-            const search = document.getElementById('searchAnnouncements').value.toLowerCase();
-
-            let filtered = allAnnouncements;
-
-            if (priority !== 'all') {
-                filtered = filtered.filter(ann => ann.priority === priority);
-            }
-
-            if (search) {
-                filtered = filtered.filter(ann =>
-                    ann.title.toLowerCase().includes(search) ||
-                    ann.description.toLowerCase().includes(search) ||
-                    (ann.category && ann.category.toLowerCase().includes(search))
-                );
-            }
-
-            renderAnnouncements(filtered);
-        }
-
         async function refreshAnnouncements() {
             const btn = document.querySelector('[onclick="refreshAnnouncements()"]');
             const originalText = btn.innerHTML;
             btn.innerHTML = '⏳ Loading...';
             btn.disabled = true;
 
-            await loadAnnouncements();
+            await loadAnnouncements(currentPage);
             showToast('Announcements refreshed!', 'success');
 
             btn.innerHTML = originalText;

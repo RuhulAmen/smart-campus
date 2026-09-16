@@ -9,6 +9,8 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&display=swap"
         rel="stylesheet">
+    <meta name="theme-color" content="#0b31c7">
+    <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="CSS/style.css">
 </head>
 
@@ -33,7 +35,10 @@
 
             <!-- ============ FACILITIES ============ -->
             <section class="admin-section">
-                <h2>🏢 Facilities</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+                    <h2 style="margin: 0;">🏢 Facilities</h2>
+                    <button type="button" class="btn-small btn-secondary" onclick="exportFacilitiesCSV()">📥 Export Facilities CSV</button>
+                </div>
                 <div class="admin-grid">
                     <form class="panel-form" id="facilityForm">
                         <h3>Add Facility</h3>
@@ -95,10 +100,55 @@
 
             <!-- ============ ISSUES ============ -->
             <section class="admin-section">
-                <h2>⚠️ Reported Issues</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+                    <h2 style="margin: 0;">⚠️ Reported Issues</h2>
+                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        <label style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--text-muted); cursor: pointer;">
+                            <input type="checkbox" id="liveRefreshToggle" style="cursor: pointer;">
+                            <span id="livePulse">🔴</span> Live Updates (15s)
+                        </label>
+                        <button type="button" class="btn-small btn-secondary" onclick="exportIssuesCSV()">📥 Export Issues CSV</button>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+                    <input type="text" id="issueSearchInput" placeholder="Search issues by title, facility, reporter..." style="flex: 1; min-width: 200px;">
+                    <select id="issueStatusFilter" style="width: auto; min-width: 140px;">
+                        <option value="all">All Statuses</option>
+                        <option value="pending">Pending</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                    <button type="button" class="btn-small" onclick="adminLoadIssues(1)">🔍 Filter</button>
+                </div>
                 <div id="issuesList">
                     <p class="text-muted">Loading issues...</p>
                 </div>
+                <div id="issuesPagination" class="pagination-controls"></div>
+            </section>
+
+            <!-- ============ USERS (PHASE 2) ============ -->
+            <section class="admin-section">
+                <h2>👥 User Management</h2>
+                <p class="text-muted" style="margin-bottom: 16px;">View registered students, promote accounts to administrators, or deactivate users.</p>
+                <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+                    <input type="text" id="userSearchInput" placeholder="Search by name, email, student ID..." style="flex: 1; min-width: 200px;">
+                    <select id="userRoleFilter" style="width: auto; min-width: 140px;">
+                        <option value="all">All Roles</option>
+                        <option value="student">Students</option>
+                        <option value="admin">Administrators</option>
+                    </select>
+                    <select id="userStatusFilter" style="width: auto; min-width: 140px;">
+                        <option value="all">All Statuses</option>
+                        <option value="active">Active Accounts</option>
+                        <option value="inactive">Disabled Accounts</option>
+                    </select>
+                    <button type="button" class="btn-small" onclick="adminLoadUsers(1)">🔍 Search</button>
+                </div>
+                <div id="usersListTableContainer" style="overflow-x: auto;">
+                    <p class="text-muted">Loading users...</p>
+                </div>
+                <div id="usersPagination" class="pagination-controls"></div>
             </section>
         </div>
     </main>
@@ -209,13 +259,31 @@
             }
         }
 
-        async function adminLoadIssues() {
+        let currentIssuesPage = 1;
+        let currentUsersPage = 1;
+
+        async function adminLoadIssues(page = 1) {
+            currentIssuesPage = page;
             const container = document.getElementById('issuesList');
+            const pagination = document.getElementById('issuesPagination');
+            const statusFilter = document.getElementById('issueStatusFilter') ? document.getElementById('issueStatusFilter').value : 'all';
+            const searchVal = document.getElementById('issueSearchInput') ? document.getElementById('issueSearchInput').value.trim() : '';
+
             try {
-                const issues = await getIssues();
+                const res = await getIssues({
+                    page,
+                    limit: 10,
+                    status: statusFilter,
+                    search: searchVal
+                });
+
+                const issues = Array.isArray(res) ? res : (res.issues || []);
+                const total = res.total !== undefined ? res.total : issues.length;
+                const pages = res.pages || 1;
 
                 if (!issues || issues.length === 0) {
-                    container.innerHTML = '<p class="text-muted">No issues reported yet.</p>';
+                    container.innerHTML = '<p class="text-muted">No issues matching criteria.</p>';
+                    pagination.innerHTML = '';
                     return;
                 }
 
@@ -236,6 +304,13 @@
                                     &nbsp;•&nbsp; 👤 ${escapeHtml(issue.reporter_name)} (${escapeHtml(issue.reporter_email)})
                                 </div>
                                 <p class="admin-item-desc">${escapeHtml(issue.description)}</p>
+                                ${issue.image_url ? `
+                                    <div style="margin-top: 10px;">
+                                        <a href="${escapeHtml(issue.image_url)}" target="_blank" rel="noopener noreferrer">
+                                            <img src="${escapeHtml(issue.image_url)}" alt="Attached Photo" style="max-height: 90px; border-radius: 6px; border: 1px solid var(--border);">
+                                        </a>
+                                    </div>
+                                ` : ''}
                             </div>
                             <div class="admin-item-actions">
                                 <select id="issueStatus-${issue._id}">${options}</select>
@@ -244,9 +319,133 @@
                         </div>
                     `;
                 }).join('');
+
+                // Pagination
+                pagination.innerHTML = `
+                    <span>Showing page ${page} of ${pages} (${total} total issue${total === 1 ? '' : 's'})</span>
+                    <div class="pagination-btns">
+                        <button class="btn-small btn-secondary" onclick="adminLoadIssues(${page - 1})" ${page <= 1 ? 'disabled' : ''}>← Prev</button>
+                        <button class="btn-small btn-secondary" onclick="adminLoadIssues(${page + 1})" ${page >= pages ? 'disabled' : ''}>Next →</button>
+                    </div>
+                `;
             } catch (error) {
                 console.error('Error loading issues:', error);
                 container.innerHTML = '<p class="text-muted">Failed to load issues.</p>';
+            }
+        }
+
+        // ============================================
+        // USER MANAGEMENT (PHASE 2)
+        // ============================================
+
+        async function adminLoadUsers(page = 1) {
+            currentUsersPage = page;
+            const container = document.getElementById('usersListTableContainer');
+            const pagination = document.getElementById('usersPagination');
+            const roleFilter = document.getElementById('userRoleFilter') ? document.getElementById('userRoleFilter').value : 'all';
+            const statusFilter = document.getElementById('userStatusFilter') ? document.getElementById('userStatusFilter').value : 'all';
+            const searchVal = document.getElementById('userSearchInput') ? document.getElementById('userSearchInput').value.trim() : '';
+            const currentUser = getCurrentUser();
+
+            try {
+                const res = await getAdminUsers({
+                    page,
+                    limit: 10,
+                    role: roleFilter,
+                    status: statusFilter,
+                    search: searchVal
+                });
+
+                const users = res.users || [];
+                const total = res.total || 0;
+                const pages = res.pages || 1;
+
+                if (!users || users.length === 0) {
+                    container.innerHTML = '<p class="text-muted" style="padding: 16px 0;">No registered users found matching your filters.</p>';
+                    pagination.innerHTML = '';
+                    return;
+                }
+
+                container.innerHTML = `
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Student ID</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${users.map(u => {
+                                const isSelf = currentUser && String(currentUser._id) === String(u._id);
+                                const nextRole = u.role === 'admin' ? 'student' : 'admin';
+                                const roleActionText = u.role === 'admin' ? 'Demote to Student' : 'Promote to Admin';
+                                const nextStatus = !u.is_active;
+                                const statusActionText = u.is_active ? 'Deactivate' : 'Activate';
+                                const statusClass = u.is_active ? 'status-indicator-active' : 'status-indicator-inactive';
+
+                                return `
+                                    <tr>
+                                        <td><strong>${escapeHtml(u.full_name)}</strong> ${isSelf ? '<span style="font-size:0.75rem; color:var(--text-muted);">(You)</span>' : ''}</td>
+                                        <td>${escapeHtml(u.email)}</td>
+                                        <td>${escapeHtml(u.student_id)}</td>
+                                        <td><span class="user-badge-${escapeHtml(u.role)}">${u.role === 'admin' ? '🛡️ Admin' : '🎓 Student'}</span></td>
+                                        <td><span class="${statusClass}">● ${u.is_active ? 'Active' : 'Disabled'}</span></td>
+                                        <td>
+                                            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                                <button class="btn-small ${u.role === 'admin' ? 'btn-secondary' : ''}" 
+                                                    onclick="adminToggleUserRole('${u._id}', '${nextRole}')" 
+                                                    ${isSelf ? 'disabled title="You cannot change your own role"' : ''}>
+                                                    ${roleActionText}
+                                                </button>
+                                                <button class="btn-small ${u.is_active ? 'btn-danger' : 'btn-secondary'}" 
+                                                    onclick="adminToggleUserStatus('${u._id}', ${nextStatus})" 
+                                                    ${isSelf ? 'disabled title="You cannot deactivate yourself"' : ''}>
+                                                    ${statusActionText}
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                `;
+
+                pagination.innerHTML = `
+                    <span>Showing page ${page} of ${pages} (${total} total registered user${total === 1 ? '' : 's'})</span>
+                    <div class="pagination-btns">
+                        <button class="btn-small btn-secondary" onclick="adminLoadUsers(${page - 1})" ${page <= 1 ? 'disabled' : ''}>← Prev</button>
+                        <button class="btn-small btn-secondary" onclick="adminLoadUsers(${page + 1})" ${page >= pages ? 'disabled' : ''}>Next →</button>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading users:', error);
+                container.innerHTML = `<p class="text-muted">Failed to load users: ${escapeHtml(error.message)}</p>`;
+            }
+        }
+
+        async function adminToggleUserRole(userId, newRole) {
+            if (!confirm(`Are you sure you want to change this user's role to ${newRole}?`)) return;
+            try {
+                await updateUserRole(userId, newRole);
+                await adminLoadUsers(currentUsersPage);
+            } catch (error) {
+                showToast(error.message || 'Failed to update role', 'error');
+            }
+        }
+
+        async function adminToggleUserStatus(userId, newStatus) {
+            const actionStr = newStatus ? 'activate' : 'deactivate';
+            if (!confirm(`Are you sure you want to ${actionStr} this user account?`)) return;
+            try {
+                await updateUserStatus(userId, newStatus);
+                await adminLoadUsers(currentUsersPage);
+            } catch (error) {
+                showToast(error.message || 'Failed to update account status', 'error');
             }
         }
 
@@ -351,7 +550,7 @@
             const status = document.getElementById(`issueStatus-${issueId}`).value;
             try {
                 await updateIssueStatus(issueId, status);
-                await adminLoadIssues();
+                await adminLoadIssues(currentIssuesPage);
             } catch (error) {
                 showToast(error.message || 'Failed to update issue status', 'error');
             }
@@ -374,11 +573,113 @@
             document.getElementById('facilityForm').addEventListener('submit', adminAddFacility);
             document.getElementById('announcementForm').addEventListener('submit', adminAddAnnouncement);
 
+            // Filter listeners for issues
+            const issueStatusFilter = document.getElementById('issueStatusFilter');
+            if (issueStatusFilter) {
+                issueStatusFilter.addEventListener('change', () => adminLoadIssues(1));
+            }
+            const issueSearchInput = document.getElementById('issueSearchInput');
+            if (issueSearchInput) {
+                issueSearchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') adminLoadIssues(1);
+                });
+            }
+
+            // Filter listeners for users
+            const userRoleFilter = document.getElementById('userRoleFilter');
+            if (userRoleFilter) {
+                userRoleFilter.addEventListener('change', () => adminLoadUsers(1));
+            }
+            const userStatusFilter = document.getElementById('userStatusFilter');
+            if (userStatusFilter) {
+                userStatusFilter.addEventListener('change', () => adminLoadUsers(1));
+            }
+            const userSearchInput = document.getElementById('userSearchInput');
+            if (userSearchInput) {
+                userSearchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') adminLoadUsers(1);
+                });
+            }
+
             await Promise.all([
                 adminLoadFacilities(),
                 adminLoadAnnouncements(),
-                adminLoadIssues()
+                adminLoadIssues(1),
+                adminLoadUsers(1)
             ]);
+        });
+
+        // ============================================
+        // CSV EXPORT (PHASE 3)
+        // ============================================
+
+        async function exportIssuesCSV() {
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/export/issues.csv`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) throw new Error('Failed to export issues CSV');
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `campus_issues_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                showToast('✅ Issues exported to CSV', 'success');
+            } catch (e) {
+                showToast(e.message || 'Could not export issues', 'error');
+            }
+        }
+
+        async function exportFacilitiesCSV() {
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/export/facilities.csv`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) throw new Error('Failed to export facilities CSV');
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `campus_facilities_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                showToast('✅ Facilities exported to CSV', 'success');
+            } catch (e) {
+                showToast(e.message || 'Could not export facilities', 'error');
+            }
+        }
+
+        // Live Auto-Refresh Timer
+        let liveRefreshInterval = null;
+        function setupLiveRefresh() {
+            const toggle = document.getElementById('liveRefreshToggle');
+            const pulse = document.getElementById('livePulse');
+            if (!toggle) return;
+
+            toggle.addEventListener('change', function () {
+                if (this.checked) {
+                    pulse.textContent = '🟢';
+                    showToast('🔴 Live updates enabled (refreshing every 15s)', 'info');
+                    liveRefreshInterval = setInterval(() => {
+                        adminLoadIssues(currentIssuesPage);
+                        adminLoadFacilities();
+                    }, 15000);
+                } else {
+                    pulse.textContent = '🔴';
+                    if (liveRefreshInterval) clearInterval(liveRefreshInterval);
+                    showToast('Live updates paused', 'info');
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', async function () {
+            setupLiveRefresh();
         });
 
         // Expose helpers to inline onclick handlers
@@ -388,6 +689,12 @@
         window.adminAddAnnouncement = adminAddAnnouncement;
         window.adminDeleteAnnouncement = adminDeleteAnnouncement;
         window.adminUpdateIssueStatus = adminUpdateIssueStatus;
+        window.adminLoadIssues = adminLoadIssues;
+        window.adminLoadUsers = adminLoadUsers;
+        window.adminToggleUserRole = adminToggleUserRole;
+        window.adminToggleUserStatus = adminToggleUserStatus;
+        window.exportIssuesCSV = exportIssuesCSV;
+        window.exportFacilitiesCSV = exportFacilitiesCSV;
     </script>
 </body>
 
