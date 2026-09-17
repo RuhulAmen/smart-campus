@@ -37,7 +37,15 @@ from utils.limiter import limiter  # type: ignore
 limiter.init_app(app)
 
 # Load configuration from environment variables
-app.config['MONGO_URI'] = os.getenv('MONGO_URI', 'mongodb://localhost:27017/smart_campus')
+mongo_uri = os.getenv('MONGO_URI')
+if not mongo_uri:
+    if os.getenv('VERCEL'):
+        logger.error(
+            "⚠️ MONGO_URI is NOT set in Vercel Environment Variables! "
+            "Please configure MONGO_URI in your Vercel project settings: Settings -> Environment Variables."
+        )
+    mongo_uri = 'mongodb://localhost:27017/smart_campus'
+app.config['MONGO_URI'] = mongo_uri
 app.config['MONGO_DB_NAME'] = os.getenv('MONGO_DB_NAME', 'smart_campus')
 app.config['JWT_EXPIRATION_HOURS'] = int(os.getenv('JWT_EXPIRATION_HOURS', '24'))
 app.config['DEBUG'] = os.getenv('DEBUG', 'False').lower() == 'true'
@@ -54,17 +62,22 @@ if not app.config['SECRET_KEY']:
 # Fail fast instead of hanging for ~30s on every request when the DB is unreachable
 MONGO_TIMEOUT_MS = int(os.getenv('MONGO_SERVER_SELECTION_TIMEOUT_MS', '5000'))
 
-# Initialize MongoDB. A bad hostname/DNS in MONGO_URI can't be recovered from, so
-# fall back explicitly (and loudly) rather than silently, which previously made
-# every API request return a confusing 500 with no hint about the real cause.
+# Initialize MongoDB. Validate URI format and provide explicit guidance on failure.
 try:
     app.mongo = PyMongo(app, serverSelectionTimeoutMS=MONGO_TIMEOUT_MS)
 except Exception as e:
-    fallback_uri = os.getenv('MONGO_FALLBACK_URI', 'mongodb://localhost:27017/smart_campus')
-    logger.error("MONGO_URI is unreachable: %s", e)
-    logger.error("Fix MONGO_URI in backend/.env. Falling back to %s", fallback_uri)
-    app.config['MONGO_URI'] = fallback_uri
-    app.mongo = PyMongo(app, serverSelectionTimeoutMS=MONGO_TIMEOUT_MS)
+    logger.error("Failed to initialize PyMongo with MONGO_URI: %s", e)
+    fallback_uri = os.getenv('MONGO_FALLBACK_URI')
+    if fallback_uri:
+        logger.warning("Falling back to explicitly configured MONGO_FALLBACK_URI: %s", fallback_uri)
+        app.config['MONGO_URI'] = fallback_uri
+        app.mongo = PyMongo(app, serverSelectionTimeoutMS=MONGO_TIMEOUT_MS)
+    else:
+        raise RuntimeError(
+            f"Failed to initialize MongoDB with MONGO_URI: {e}. "
+            f"If your database password contains special characters (like '@', ':', or '/'), "
+            f"they must be percent-encoded (e.g. '@' -> '%40')."
+        ) from e
 
 # Absolute path to the frontend directory
 FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), 'frontend'))
