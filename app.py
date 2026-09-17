@@ -80,8 +80,10 @@ except Exception as e:
         logger.error("Fallback PyMongo initialization also failed: %s", fallback_err)
         app.mongo = None
 
-# Absolute path to the frontend directory
+# Absolute paths to static asset directories (prefer public, fallback to frontend)
+PUBLIC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), 'public'))
 FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), 'frontend'))
+STATIC_DIRS = [d for d in (PUBLIC_DIR, FRONTEND_DIR) if os.path.isdir(d)]
 
 # Absolute path to the uploads directory (use /tmp in serverless environments like Vercel)
 if os.getenv('VERCEL') or os.getenv('AWS_LAMBDA_FUNCTION_NAME'):
@@ -144,7 +146,11 @@ def initialize_data():
 @app.route('/api/index')
 @app.route('/api/index.py')
 def serve_frontend():
-    return send_from_directory(FRONTEND_DIR, 'index.html')
+    for d in STATIC_DIRS:
+        idx = os.path.join(d, 'index.html')
+        if os.path.isfile(idx):
+            return send_from_directory(d, 'index.html', mimetype='text/html')
+    return jsonify({'error': 'Application frontend not found'}), 404
 
 
 @app.route('/uploads/<path:filename>')
@@ -154,16 +160,57 @@ def serve_upload(filename):
 
 @app.route('/<path:path>')
 def serve_static(path):
-    # Normalize path if Vercel forwarded using rewritten destination prefix
+    # Normalize path if Vercel or proxy forwarded using rewritten destination prefix
     clean_path = path
-    if clean_path.startswith('api/index/'):
-        clean_path = clean_path[len('api/index/'):]
-    elif clean_path.startswith('api/index.py/'):
-        clean_path = clean_path[len('api/index.py/'):]
+    for prefix in ('api/index/', 'api/index.py/', 'api/'):
+        if clean_path.startswith(prefix):
+            clean_path = clean_path[len(prefix):]
+            break
 
-    file_path = os.path.join(FRONTEND_DIR, clean_path)
-    if os.path.isfile(file_path):
-        return send_from_directory(FRONTEND_DIR, clean_path)
+    # Strip query parameters if appended to path
+    clean_path = clean_path.split('?')[0]
+
+    # Explicit MIME-type determination for rock-solid stylesheet/script delivery
+    mime_type = None
+    lower_path = clean_path.lower()
+    if lower_path.endswith('.css'):
+        mime_type = 'text/css'
+    elif lower_path.endswith('.js'):
+        mime_type = 'application/javascript'
+    elif lower_path.endswith('.json'):
+        mime_type = 'application/json'
+    elif lower_path.endswith('.html'):
+        mime_type = 'text/html'
+    elif lower_path.endswith('.png'):
+        mime_type = 'image/png'
+    elif lower_path.endswith(('.jpg', '.jpeg')):
+        mime_type = 'image/jpeg'
+    elif lower_path.endswith('.svg'):
+        mime_type = 'image/svg+xml'
+    elif lower_path.endswith('.ico'):
+        mime_type = 'image/x-icon'
+
+    for directory in STATIC_DIRS:
+        # Check direct path
+        file_path = os.path.join(directory, clean_path)
+        if os.path.isfile(file_path):
+            return send_from_directory(directory, clean_path, mimetype=mime_type)
+
+        # Check lowercase / uppercase CSS variation
+        if clean_path.startswith('css/'):
+            alt_path = 'CSS/' + clean_path[4:]
+            if os.path.isfile(os.path.join(directory, alt_path)):
+                return send_from_directory(directory, alt_path, mimetype='text/css')
+        elif clean_path.startswith('CSS/'):
+            alt_path = 'css/' + clean_path[4:]
+            if os.path.isfile(os.path.join(directory, alt_path)):
+                return send_from_directory(directory, alt_path, mimetype='text/css')
+
+        # Check clean URL (.html extension omitted)
+        html_file = file_path + '.html'
+        if os.path.isfile(html_file):
+            return send_from_directory(directory, clean_path + '.html', mimetype='text/html')
+
     return jsonify({'error': 'Resource not found'}), 404
 
 
