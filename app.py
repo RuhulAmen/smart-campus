@@ -50,41 +50,48 @@ app.config['MONGO_DB_NAME'] = os.getenv('MONGO_DB_NAME', 'smart_campus')
 app.config['JWT_EXPIRATION_HOURS'] = int(os.getenv('JWT_EXPIRATION_HOURS', '24'))
 app.config['DEBUG'] = os.getenv('DEBUG', 'False').lower() == 'true'
 
-# No hardcoded secret: a default key in source control lets anyone forge tokens
-# (including admin ones), so refuse to start without a real one.
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-if not app.config['SECRET_KEY']:
-    raise RuntimeError(
-        "SECRET_KEY is not set. Copy backend/.env.example to backend/.env and set a unique "
-        "SECRET_KEY, e.g. python -c \"import secrets; print(secrets.token_hex(32))\""
-    )
+# Secret key configuration
+secret_key = os.getenv('SECRET_KEY')
+if not secret_key:
+    if os.getenv('VERCEL') or os.getenv('AWS_LAMBDA_FUNCTION_NAME'):
+        logger.warning("⚠️ SECRET_KEY is not set in Vercel Environment Variables! Using temporary fallback.")
+        secret_key = 'smart-campus-temporary-secret-key-please-set-in-vercel'
+    else:
+        raise RuntimeError(
+            "SECRET_KEY is not set. Copy backend/.env.example to backend/.env and set a unique "
+            "SECRET_KEY, e.g. python -c \"import secrets; print(secrets.token_hex(32))\""
+        )
+app.config['SECRET_KEY'] = secret_key
 
 # Fail fast instead of hanging for ~30s on every request when the DB is unreachable
 MONGO_TIMEOUT_MS = int(os.getenv('MONGO_SERVER_SELECTION_TIMEOUT_MS', '5000'))
 
-# Initialize MongoDB. Validate URI format and provide explicit guidance on failure.
+# Initialize MongoDB. Validate URI format and provide graceful fallback so serverless functions boot
 try:
     app.mongo = PyMongo(app, serverSelectionTimeoutMS=MONGO_TIMEOUT_MS)
 except Exception as e:
     logger.error("Failed to initialize PyMongo with MONGO_URI: %s", e)
-    fallback_uri = os.getenv('MONGO_FALLBACK_URI')
-    if fallback_uri:
-        logger.warning("Falling back to explicitly configured MONGO_FALLBACK_URI: %s", fallback_uri)
-        app.config['MONGO_URI'] = fallback_uri
+    fallback_uri = os.getenv('MONGO_FALLBACK_URI', 'mongodb://localhost:27017/smart_campus')
+    logger.warning("Falling back to %s so application can still start", fallback_uri)
+    app.config['MONGO_URI'] = fallback_uri
+    try:
         app.mongo = PyMongo(app, serverSelectionTimeoutMS=MONGO_TIMEOUT_MS)
-    else:
-        raise RuntimeError(
-            f"Failed to initialize MongoDB with MONGO_URI: {e}. "
-            f"If your database password contains special characters (like '@', ':', or '/'), "
-            f"they must be percent-encoded (e.g. '@' -> '%40')."
-        ) from e
+    except Exception as fallback_err:
+        logger.error("Fallback PyMongo initialization also failed: %s", fallback_err)
+        app.mongo = None
 
 # Absolute path to the frontend directory
 FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), 'frontend'))
 
-# Absolute path to the uploads directory for issue photo attachments
-UPLOAD_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), 'uploads'))
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+# Absolute path to the uploads directory (use /tmp in serverless environments like Vercel)
+if os.getenv('VERCEL') or os.getenv('AWS_LAMBDA_FUNCTION_NAME'):
+    UPLOAD_FOLDER = '/tmp/uploads'
+else:
+    UPLOAD_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), 'uploads'))
+try:
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+except Exception as e:
+    logger.warning("Could not create uploads directory: %s", e)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Import models and routes (resolved from backend directory added to sys.path above)
@@ -96,10 +103,11 @@ from utils.db_indexes import ensure_indexes  # type: ignore
 register_routes(app)
 
 # Create database indexes (idempotent — safe to call on every startup)
-try:
-    ensure_indexes(app.mongo)
-except Exception:
-    pass  # Logged inside ensure_indexes; don't block startup
+if app.mongo:
+    try:
+        ensure_indexes(app.mongo)
+    except Exception:
+        pass  # Logged inside ensure_indexes; don't block startup
 
 # Seed default data a single time (guarded so it works under any server/entrypoint)
 _data_initialized = False
@@ -110,17 +118,11 @@ _INIT_RETRY_SECONDS = int(os.getenv('SEED_RETRY_SECONDS', '60'))
 
 @app.before_request
 def initialize_data():
-    """Seed default facilities once the database is reachable.
-
-    The guard is only set after a successful seed: marking it beforehand meant
-    that a database which was offline during the first API request left the
-    defaults unseeded for the entire life of the process. A cooldown keeps an
-    offline database from being retried on every single request.
-    """
+    """Seed default facilities once the database is reachable."""
     global _data_initialized, _last_init_attempt
 
-    # Don't hold up static file requests (HTML, CSS, JS)
-    if _data_initialized or not request.path.startswith('/api'):
+    # Don't hold up static file requests (HTML, CSS, JS) or if mongo is not initialized
+    if not app.mongo or _data_initialized or not request.path.startswith('/api'):
         return
 
     now = time.monotonic()
