@@ -80,6 +80,8 @@ limiter.init_app(app)
 
 # Load configuration from environment variables
 mongo_uri = os.getenv('MONGO_URI')
+if mongo_uri:
+    mongo_uri = mongo_uri.strip().strip('\'"')
 if not mongo_uri:
     if os.getenv('VERCEL'):
         logger.error(
@@ -105,19 +107,30 @@ if not secret_key:
         )
 app.config['SECRET_KEY'] = secret_key
 
-# Fail fast instead of hanging for ~30s on every request when the DB is unreachable
-MONGO_TIMEOUT_MS = int(os.getenv('MONGO_SERVER_SELECTION_TIMEOUT_MS', '5000'))
+# 15s timeout provides sufficient buffer for TLS handshake and replica set election on cold starts
+MONGO_TIMEOUT_MS = int(os.getenv('MONGO_SERVER_SELECTION_TIMEOUT_MS', '15000'))
+
+# Configure PyMongo with certifi CA bundle and connect=False for serverless stability
+mongo_options = {
+    'serverSelectionTimeoutMS': MONGO_TIMEOUT_MS,
+    'connect': False,
+}
+try:
+    import certifi
+    mongo_options['tlsCAFile'] = certifi.where()
+except Exception as ca_err:
+    logger.warning("Could not load certifi CA bundle: %s", ca_err)
 
 # Initialize MongoDB. Validate URI format and provide graceful fallback so serverless functions boot
 try:
-    app.mongo = PyMongo(app, serverSelectionTimeoutMS=MONGO_TIMEOUT_MS)
+    app.mongo = PyMongo(app, **mongo_options)
 except Exception as e:
     logger.error("Failed to initialize PyMongo with MONGO_URI: %s", e)
     fallback_uri = os.getenv('MONGO_FALLBACK_URI', 'mongodb://localhost:27017/smart_campus')
     logger.warning("Falling back to %s so application can still start", fallback_uri)
     app.config['MONGO_URI'] = fallback_uri
     try:
-        app.mongo = PyMongo(app, serverSelectionTimeoutMS=MONGO_TIMEOUT_MS)
+        app.mongo = PyMongo(app, serverSelectionTimeoutMS=MONGO_TIMEOUT_MS, connect=False)
     except Exception as fallback_err:
         logger.error("Fallback PyMongo initialization also failed: %s", fallback_err)
         app.mongo = None

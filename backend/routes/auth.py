@@ -81,8 +81,13 @@ def signup():
         }), 201
 
     except Exception as e:
-        if "Connection refused" in str(e) or "Timeout" in type(e).__name__ or "ServerSelectionTimeoutError" in type(e).__name__:
-            return jsonify({'error': 'Database connection failed. Please check network access and MongoDB cluster status.'}), 503
+        err_type = type(e).__name__
+        err_msg = str(e)
+        if "Connection refused" in err_msg or "Timeout" in err_type or "ServerSelectionTimeoutError" in err_type or "AutoReconnect" in err_type:
+            detail = err_msg.split('\n')[0] if err_msg else err_type
+            if len(detail) > 120:
+                detail = detail[:120] + '...'
+            return jsonify({'error': f'Database connection error: {detail}. Verify Atlas IP access (0.0.0.0/0) and credentials.'}), 503
         return jsonify({'error': str(e)}), 500
 
 
@@ -112,8 +117,13 @@ def login():
         }), 200
 
     except Exception as e:
-        if "Connection refused" in str(e) or "Timeout" in type(e).__name__ or "ServerSelectionTimeoutError" in type(e).__name__:
-            return jsonify({'error': 'Database connection failed. Please check network access and MongoDB cluster status.'}), 503
+        err_type = type(e).__name__
+        err_msg = str(e)
+        if "Connection refused" in err_msg or "Timeout" in err_type or "ServerSelectionTimeoutError" in err_type or "AutoReconnect" in err_type:
+            detail = err_msg.split('\n')[0] if err_msg else err_type
+            if len(detail) > 120:
+                detail = detail[:120] + '...'
+            return jsonify({'error': f'Database connection error: {detail}. Verify Atlas IP access (0.0.0.0/0) and credentials.'}), 503
         return jsonify({'error': str(e)}), 500
 
 
