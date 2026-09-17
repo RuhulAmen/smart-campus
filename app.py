@@ -1,13 +1,14 @@
+import os
+import sys
+import time
+import urllib.parse
+import logging
 from flask import Flask, jsonify, send_from_directory, request
 from flask_cors import CORS
 from flask_pymongo import PyMongo
 from dotenv import load_dotenv
-import os
-import sys
-import time
 from flask_limiter import Limiter  # type: ignore
 from flask_limiter.util import get_remote_address  # type: ignore
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -26,11 +27,52 @@ if os.path.exists(backend_env):
 
 # Initialize Flask app
 app = Flask(__name__)
+app.url_map.strict_slashes = False
 
-# Enable CORS for the configured frontend origins (comma-separated in .env)
-cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:5000,http://127.0.0.1:5000')
-cors_origins = [origin.strip() for origin in cors_origins.split(',') if origin.strip()]
-CORS(app, origins=cors_origins)
+
+class VercelPathNormalizer:
+    """WSGI middleware ensuring correct PATH_INFO when Vercel rewrites requests."""
+
+    def __init__(self, wsgi_app):
+        self.wsgi_app = wsgi_app
+
+    def __call__(self, environ, start_response):
+        query_string = environ.get('QUERY_STRING', '')
+        path_info = environ.get('PATH_INFO', '')
+
+        # 1. Check for explicitly forwarded __path__ query parameter from Vercel rewrite
+        if '__path__=' in query_string:
+            params = urllib.parse.parse_qs(query_string, keep_blank_values=True)
+            if '__path__' in params and params['__path__']:
+                target_path = params.pop('__path__')[0]
+                environ['PATH_INFO'] = target_path
+                environ['QUERY_STRING'] = urllib.parse.urlencode(params, doseq=True)
+        # 2. Fallback: check proxy headers if PATH_INFO was rewritten to index entrypoint
+        elif path_info in ('/api/index', '/api/index.py', 'api/index', 'api/index.py'):
+            real_path = (
+                environ.get('HTTP_X_FORWARDED_URI') or
+                environ.get('HTTP_X_MATCHED_PATH') or
+                environ.get('RAW_URI') or
+                environ.get('REQUEST_URI')
+            )
+            if real_path:
+                clean_path = real_path.split('?')[0]
+                if clean_path and clean_path not in ('/api/index', '/api/index.py'):
+                    environ['PATH_INFO'] = clean_path
+
+        return self.wsgi_app(environ, start_response)
+
+
+# Wrap Flask's wsgi_app with path normalizer
+app.wsgi_app = VercelPathNormalizer(app.wsgi_app)
+
+# Enable CORS (allow all origins on Vercel or configured origins locally)
+if os.getenv('VERCEL'):
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
+else:
+    cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:5000,http://127.0.0.1:5000')
+    cors_origins = [origin.strip() for origin in cors_origins.split(',') if origin.strip()]
+    CORS(app, origins=cors_origins)
 
 # Rate limiting — import the shared instance so route modules can decorate endpoints
 from utils.limiter import limiter  # type: ignore
@@ -141,10 +183,8 @@ def initialize_data():
         logger.warning("Could not initialize default facilities (will retry): %s", e)
 
 
-# Serve frontend files
+# Serve frontend homepage
 @app.route('/')
-@app.route('/api/index')
-@app.route('/api/index.py')
 def serve_frontend():
     for d in STATIC_DIRS:
         idx = os.path.join(d, 'index.html')
