@@ -141,6 +141,8 @@ def initialize_data():
 
 # Serve frontend files
 @app.route('/')
+@app.route('/api/index')
+@app.route('/api/index.py')
 def serve_frontend():
     return send_from_directory(FRONTEND_DIR, 'index.html')
 
@@ -152,9 +154,16 @@ def serve_upload(filename):
 
 @app.route('/<path:path>')
 def serve_static(path):
-    file_path = os.path.join(FRONTEND_DIR, path)
+    # Normalize path if Vercel forwarded using rewritten destination prefix
+    clean_path = path
+    if clean_path.startswith('api/index/'):
+        clean_path = clean_path[len('api/index/'):]
+    elif clean_path.startswith('api/index.py/'):
+        clean_path = clean_path[len('api/index.py/'):]
+
+    file_path = os.path.join(FRONTEND_DIR, clean_path)
     if os.path.isfile(file_path):
-        return send_from_directory(FRONTEND_DIR, path)
+        return send_from_directory(FRONTEND_DIR, clean_path)
     return jsonify({'error': 'Resource not found'}), 404
 
 
