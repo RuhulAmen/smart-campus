@@ -14,9 +14,11 @@ const STATIC_ASSETS = [
     '/my-reports.html',
     '/login.html',
     '/signup.html',
+    '/profile.html',
     '/CSS/style.css',
     '/js/app.js',
-    '/manifest.json'
+    '/manifest.json',
+    '/icons/icon-192.png'
 ];
 
 // Install Event: pre-cache application shell

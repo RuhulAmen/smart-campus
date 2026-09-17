@@ -9,7 +9,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&display=swap"
         rel="stylesheet">
-    <meta name="theme-color" content="#0b31c7">
+    <meta name="theme-color" content="#0a0e18">
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="CSS/style.css">
 </head>
@@ -66,10 +66,10 @@
                     <div class="donut-chart-container">
                         <div class="donut-svg-wrapper">
                             <svg class="donut-svg" viewBox="0 0 100 100">
-                                <circle cx="50" cy="50" r="40" stroke="#171a20" stroke-width="18" fill="none" />
-                                <circle id="donutOperational" class="donut-segment" cx="50" cy="50" r="40" stroke="#3ddc84" stroke-dasharray="0 251.3" stroke-dashoffset="0" />
-                                <circle id="donutMaintenance" class="donut-segment" cx="50" cy="50" r="40" stroke="#eca634" stroke-dasharray="0 251.3" stroke-dashoffset="0" />
-                                <circle id="donutClosed" class="donut-segment" cx="50" cy="50" r="40" stroke="#e5484d" stroke-dasharray="0 251.3" stroke-dashoffset="0" />
+                                <circle cx="50" cy="50" r="40" stroke="#121829" stroke-width="18" fill="none" />
+                                <circle id="donutOperational" class="donut-segment" cx="50" cy="50" r="40" stroke="#4ecdc4" stroke-dasharray="0 251.3" stroke-dashoffset="0" />
+                                <circle id="donutMaintenance" class="donut-segment" cx="50" cy="50" r="40" stroke="#dfa143" stroke-dasharray="0 251.3" stroke-dashoffset="0" />
+                                <circle id="donutClosed" class="donut-segment" cx="50" cy="50" r="40" stroke="#ab252f" stroke-dasharray="0 251.3" stroke-dashoffset="0" />
                             </svg>
                             <div class="donut-center-text">
                                 <div class="donut-center-val" id="donutPercent">0%</div>
@@ -79,19 +79,19 @@
                         <div class="chart-legend">
                             <div class="legend-item">
                                 <span class="legend-indicator">
-                                    <span class="legend-dot" style="background-color: #3ddc84;"></span> Operational
+                                    <span class="legend-dot" style="background-color: #4ecdc4;"></span> Operational
                                 </span>
                                 <span class="legend-count" id="legendOpCount">0</span>
                             </div>
                             <div class="legend-item">
                                 <span class="legend-indicator">
-                                    <span class="legend-dot" style="background-color: #eca634;"></span> Maintenance
+                                    <span class="legend-dot" style="background-color: #dfa143;"></span> Maintenance
                                 </span>
                                 <span class="legend-count" id="legendMaintCount">0</span>
                             </div>
                             <div class="legend-item">
                                 <span class="legend-indicator">
-                                    <span class="legend-dot" style="background-color: #e5484d;"></span> Closed
+                                    <span class="legend-dot" style="background-color: #ab252f;"></span> Closed
                                 </span>
                                 <span class="legend-count" id="legendClosedCount">0</span>
                             </div>
@@ -108,46 +108,46 @@
                     <div class="pipeline-container">
                         <!-- Multi-segment visual bar -->
                         <div class="stacked-bar-wrapper">
-                            <div id="stackResolved" class="stacked-segment" style="width: 0%; background-color: #3ddc84;"></div>
-                            <div id="stackInProgress" class="stacked-segment" style="width: 0%; background-color: #58a6ff;"></div>
-                            <div id="stackPending" class="stacked-segment" style="width: 0%; background-color: #e3b341;"></div>
-                            <div id="stackRejected" class="stacked-segment" style="width: 0%; background-color: #8b949e;"></div>
+                            <div id="stackResolved" class="stacked-segment" style="width: 0%; background-color: #4ecdc4;"></div>
+                            <div id="stackInProgress" class="stacked-segment" style="width: 0%; background-color: #8fa8de;"></div>
+                            <div id="stackPending" class="stacked-segment" style="width: 0%; background-color: #dfa143;"></div>
+                            <div id="stackRejected" class="stacked-segment" style="width: 0%; background-color: #8f1b24;"></div>
                         </div>
                         <!-- Individual breakdown rows -->
                         <div class="pipeline-rows">
                             <div class="pipeline-row">
                                 <span class="pipeline-label">
-                                    <span class="legend-dot" style="background-color: #3ddc84;"></span> Resolved
+                                    <span class="legend-dot" style="background-color: #4ecdc4;"></span> Resolved
                                 </span>
                                 <div class="pipeline-bar-bg">
-                                    <div id="pipeResolvedBar" class="pipeline-bar-fill" style="width: 0%; background-color: #3ddc84;"></div>
+                                    <div id="pipeResolvedBar" class="pipeline-bar-fill" style="width: 0%; background-color: #4ecdc4;"></div>
                                 </div>
                                 <span class="pipeline-count" id="pipeResolvedCount">0</span>
                             </div>
                             <div class="pipeline-row">
                                 <span class="pipeline-label">
-                                    <span class="legend-dot" style="background-color: #58a6ff;"></span> In Progress
+                                    <span class="legend-dot" style="background-color: #8fa8de;"></span> In Progress
                                 </span>
                                 <div class="pipeline-bar-bg">
-                                    <div id="pipeInProgressBar" class="pipeline-bar-fill" style="width: 0%; background-color: #58a6ff;"></div>
+                                    <div id="pipeInProgressBar" class="pipeline-bar-fill" style="width: 0%; background-color: #8fa8de;"></div>
                                 </div>
                                 <span class="pipeline-count" id="pipeInProgressCount">0</span>
                             </div>
                             <div class="pipeline-row">
                                 <span class="pipeline-label">
-                                    <span class="legend-dot" style="background-color: #e3b341;"></span> Pending
+                                    <span class="legend-dot" style="background-color: #dfa143;"></span> Pending
                                 </span>
                                 <div class="pipeline-bar-bg">
-                                    <div id="pipePendingBar" class="pipeline-bar-fill" style="width: 0%; background-color: #e3b341;"></div>
+                                    <div id="pipePendingBar" class="pipeline-bar-fill" style="width: 0%; background-color: #dfa143;"></div>
                                 </div>
                                 <span class="pipeline-count" id="pipePendingCount">0</span>
                             </div>
                             <div class="pipeline-row">
                                 <span class="pipeline-label">
-                                    <span class="legend-dot" style="background-color: #8b949e;"></span> Rejected
+                                    <span class="legend-dot" style="background-color: #8f1b24;"></span> Rejected
                                 </span>
                                 <div class="pipeline-bar-bg">
-                                    <div id="pipeRejectedBar" class="pipeline-bar-fill" style="width: 0%; background-color: #8b949e;"></div>
+                                    <div id="pipeRejectedBar" class="pipeline-bar-fill" style="width: 0%; background-color: #8f1b24;"></div>
                                 </div>
                                 <span class="pipeline-count" id="pipeRejectedCount">0</span>
                             </div>

@@ -40,102 +40,108 @@ A full-stack web application built with **Flask** and **MongoDB Atlas** to manag
 
 ```text
 Smart Campus Project/
+├── api/
+│   └── index.py            # Vercel serverless entrypoint
 ├── backend/
-│   ├── models/          # Data models (User, Facility, Issue, Announcement)
-│   ├── routes/          # RESTful API endpoints with blueprints
-│   ├── utils/           # JWT helpers, auth decorators, token management
-│   ├── app.py           # Flask app entry point & CORS config
-│   ├── create_admin.py  # CLI script to provision the first admin account
-│   └── config.py        # Environment-based configuration
+│   ├── models/             # Data models (User, Facility, Issue, Announcement)
+│   ├── routes/             # RESTful API blueprints (auth, facilities, issues, admin, etc.)
+│   ├── schemas/            # Marshmallow request validation schemas
+│   ├── utils/              # Limiter, validator, DB indexes, email notifications
+│   └── create_admin.py     # CLI script to provision the first admin account
+├── docs/
+│   └── LinkedIn_Post_Draft.md # Social launch and post drafts
 ├── frontend/
-│   ├── CSS/style.css    # Dark-themed responsive stylesheet
-│   ├── js/app.js        # API client, auth logic, UI helpers
-│   ├── index.html       # Landing page with facility preview
-│   ├── login.html       # Authentication page
-│   ├── signup.html      # User registration
-│   ├── dashboard.html   # Stats & announcements dashboard
-│   ├── facilities.html  # Facility status grid
-│   ├── announcements.html # Announcements with filtering
-│   ├── report-issue.html # Issue submission form
-│   ├── my-reports.html  # Track reported issues by email
-│   ├── profile.html     # Edit profile / change password
-│   └── admin.html       # Admin panel (facilities, announcements, issues)
-├── .env.example         # Environment template (copy to .env)
+│   ├── CSS/style.css       # Dark-themed responsive stylesheet
+│   ├── icons/              # PWA app icons (192px, 512px)
+│   ├── js/app.js           # API client, auth state, UI helpers
+│   ├── manifest.json       # PWA Web App Manifest
+│   ├── sw.js               # Offline service worker
+│   ├── index.html          # Landing page with facility preview
+│   ├── login.html          # Authentication page
+│   ├── signup.html         # User registration
+│   ├── dashboard.html      # Visual analytics & announcements dashboard
+│   ├── facilities.html     # Facility status grid
+│   ├── announcements.html  # Announcements with filtering & pagination
+│   ├── report-issue.html   # Issue submission with photo attachment
+│   ├── my-reports.html     # Track reported issues by user
+│   ├── profile.html        # Profile management
+│   └── admin.html          # Admin panel with live updates & CSV export
+├── tests/                  # Automated unit and integration test suite (43 tests)
+├── uploads/                # Local storage for reported issue photos (.gitkeep)
+├── .env.example            # Documented environment variables template
+├── .gitignore              # Git ignore rules for caches, secrets, and uploads
+├── app.py                  # Primary Flask application entry point
+├── Dockerfile              # Multi-stage production container build
+├── docker-compose.yml      # Orchestrates Flask web app + MongoDB 6.0
+├── requirements.txt        # Canonical Python dependencies
+├── vercel.json             # Vercel deployment rewrite rules
 └── README.md
+```
 
 ---
 
-## 🔑 API Endpoints
+## 🔑 API Endpoints (39 Routes)
 
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| `POST` | `/api/auth/signup` | Register new user | No |
-| `POST` | `/api/auth/login` | User login | No |
+| `GET` | `/api/health` | Health check & DB latency ping | No |
+| `POST` | `/api/auth/signup` | Register student (rate limited) | No |
+| `POST` | `/api/auth/login` | User login (rate limited) | No |
 | `GET` | `/api/auth/verify` | Verify JWT token | Yes |
 | `GET` | `/api/auth/profile` | Get user profile | Yes |
 | `PUT` | `/api/auth/profile` | Update profile | Yes |
 | `GET` | `/api/facilities` | List all facilities | No |
 | `POST` | `/api/facilities` | Create facility | Admin |
 | `PUT` | `/api/facilities/:id` | Update facility | Admin |
-| `PATCH` | `/api/facilities/:id/status` | Update status | Admin |
+| `PATCH` | `/api/facilities/:id/status` | Update facility status | Admin |
 | `DELETE` | `/api/facilities/:id` | Soft-delete facility | Admin |
-| `GET` | `/api/announcements` | List announcements | No |
+| `GET` | `/api/announcements` | List announcements (search & pagination) | No |
 | `GET` | `/api/announcements/recent` | Recent announcements | No |
 | `POST` | `/api/announcements` | Create announcement | Admin |
-| `GET` | `/api/issues` | List all issues | No |
-| `POST` | `/api/issues` | Report new issue | No |
-| `GET` | `/api/issues/track?email=` | Track issues by reporter email | No |
-| `GET` | `/api/issues/stats` | Issue status counts | No |
-| `PATCH` | `/api/issues/:id/status` | Update issue status | Admin |
-| `GET` | `/api/dashboard/stats` | Dashboard statistics | Yes |
-
----
-
-## 🏗️ Key Technical Decisions
-
-- **JWT Authentication:** Stateless auth using PyJWT with configurable expiration
-- **Role-Based Access:** Custom `@token_required` and `@admin_required` decorators
-- **No Self-Escalation:** Signup always assigns the `student` role; admins are provisioned via `create_admin.py`
-- **Soft Deletes:** Facilities and announcements use `is_active`/`status` flags instead of hard deletion
-- **Blueprint Architecture:** Modular route organization for scalability
-- **Environment Variables:** Sensitive config (MongoDB URI, SECRET_KEY) loaded from `.env`
+| `GET` | `/api/issues` | List all issues (search, filter, pagination) | No |
+| `POST` | `/api/issues` | Report new issue with photo | No |
+| `GET` | `/api/issues/track` | Track issues by reporter email | No |
+| `PATCH` | `/api/issues/:id/status` | Update issue status (triggers email) | Admin |
+| `POST` | `/api/uploads/` | Upload photo attachment (5MB limit) | No |
+| `GET` | `/api/admin/users` | List users with pagination & role filters | Admin |
+| `PATCH` | `/api/admin/users/:id/role` | Promote/demote role (self-guarded) | Admin |
+| `PATCH` | `/api/admin/users/:id/status` | Activate/deactivate account (self-guarded) | Admin |
+| `DELETE` | `/api/admin/users/:id` | Delete user account | Admin |
+| `GET` | `/api/admin/export/issues.csv` | Export issues to CSV spreadsheet | Admin |
+| `GET` | `/api/admin/export/facilities.csv` | Export facilities to CSV spreadsheet | Admin |
+| `GET` | `/api/dashboard/stats` | Pipeline stats & facility counts | Yes |
 
 ---
 
 ## 🚀 Getting Started
 
-### 1. Clone & Install
+### 1. Install Dependencies
 
 ```bash
-# Install dependencies
-cd backend
 pip install -r requirements.txt
 ```
 
 ### 2. Configure Environment
 
 ```bash
-# Copy the example env file
 cp .env.example .env
-
-# Edit .env with your MongoDB credentials and secret key
+# Edit .env with your MongoDB URI and secret key
 ```
 
-### 3. Create the First Admin Account
-
-Self-service signups always create **student** accounts. To get an admin account (needed for the Admin Panel), run:
+### 3. Run Automated Tests
 
 ```bash
-cd backend
-python create_admin.py --email admin@campus.edu --password 'choose-a-strong-password'
+python3 -m unittest discover -s tests -v
 ```
-
-You can also set `ADMIN_EMAIL`/`ADMIN_PASSWORD` in your `.env` and run the script without arguments.
 
 ### 4. Run the Application
 
 ```bash
-python app.py
+python3 app.py
+```
+Or with Docker Compose:
+```bash
+docker compose up -d
 ```
 
 The app will be available at `http://localhost:5000`
