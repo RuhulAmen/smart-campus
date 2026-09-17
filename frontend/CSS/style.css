@@ -11,62 +11,69 @@
    1. DESIGN TOKENS & SYSTEM VARIABLES
    ========================================================================== */
 :root {
-    /* --- Core Palette: Jet Black, Deep Indigo, Bone White, Parchment --- */
-    --void-black: #05070a;
-    --night-abyss: #070a12;
-    --observatory-dark: #0a0e18;
-    --deep-indigo: #101627;
-    --indigo-surface: #141b2f;
-    --indigo-elevated: #1a233b;
+    /* --- Core Palette: Dark Vignetted Blood Red, Deep Crimson Wine, Bone White, Parchment --- */
+    --blood-void: #060102;
+    --blood-night: #0d0205;
+    --blood-abyss: #150307;
+    --blood-wine: #20060b;
+    --blood-surface: #2b080f;
+    --blood-elevated: #380d16;
 
     /* Backward Compatible Token Aliases */
-    --dark: var(--observatory-dark);
-    --bg-light: var(--void-black);
-    --card-bg: rgba(12, 17, 28, 0.82);
-    --border: rgba(194, 201, 216, 0.12);
+    --void-black: #0a0204;
+    --night-abyss: #0d0205;
+    --observatory-dark: #140307;
+    --deep-indigo: #1e050b;
+    --indigo-surface: #29080f;
+    --indigo-elevated: #360c15;
+
+    --dark: var(--blood-night);
+    --bg-light: var(--blood-abyss);
+    --card-bg: rgba(28, 7, 13, 0.85);
+    --border: rgba(220, 160, 175, 0.14);
 
     /* Text: Bone White, Faded Parchment, Manuscript Ink */
-    --bone-white: #f5f2eb;
-    --text-main: #f5f2eb;
-    --parchment: #d6ccbb;
-    --parchment-dim: #948b7a;
-    --text-muted: #948b7a;
-    --parchment-faint: #4c463b;
+    --bone-white: #f7f2ea;
+    --text-main: #f7f2ea;
+    --parchment: #d9ccb9;
+    --parchment-dim: #998a78;
+    --text-muted: #998a78;
+    --parchment-faint: #544437;
 
     /* Metals: Celestial Silver & Astronomical Brass/Gold */
-    --silver: #c2c9d6;
-    --silver-dim: #737e94;
-    --silver-border: rgba(194, 201, 216, 0.14);
-    --silver-border-glow: rgba(194, 201, 216, 0.28);
+    --silver: #c8cbd4;
+    --silver-dim: #847e8c;
+    --silver-border: rgba(220, 165, 175, 0.16);
+    --silver-border-glow: rgba(220, 165, 175, 0.32);
 
     /* Muted Teal: Verdigris, Astrolabe Geometry & Telemetry */
     --muted-teal: #3b757f;
     --teal-glow: #4ecdc4;
     --teal-bright: #38bdf8;
-    --teal-soft: rgba(78, 205, 196, 0.12);
+    --teal-soft: rgba(78, 205, 196, 0.14);
 
     /* Candlelight Amber: Warm Flickering Library Glow */
-    --candlelight: #dfa143;
-    --candlelight-amber: #e8a94b;
-    --candlelight-soft: rgba(223, 161, 67, 0.15);
-    --candlelight-glow: 0 0 16px rgba(223, 161, 67, 0.28);
+    --candlelight: #e2a446;
+    --candlelight-amber: #eca94c;
+    --candlelight-soft: rgba(226, 164, 70, 0.16);
+    --candlelight-glow: 0 0 16px rgba(226, 164, 70, 0.32);
 
     /* Restrained Blood-Red: Mortality, Danger & Critical Triage */
-    --blood-red: #8f1b24;
-    --blood-crimson: #ab252f;
-    --blood-soft: rgba(143, 27, 36, 0.18);
-    --blood-glow: 0 0 16px rgba(171, 37, 47, 0.3);
+    --blood-red: #9e1a25;
+    --blood-crimson: #c22935;
+    --blood-soft: rgba(158, 26, 37, 0.22);
+    --blood-glow: 0 0 20px rgba(194, 41, 53, 0.4);
 
-    /* Indigo Terminal Accents */
-    --accent: #3a4d7c;
-    --accent-hover: #4e669e;
-    --accent-terminal: #6882be;
+    /* Crimson Velvet & Blood-Wine Interactive Accents */
+    --accent: #5e111a;
+    --accent-hover: #7d1723;
+    --accent-terminal: #ad2432;
 
     /* Glassmorphism & Atmospheric Elevation */
-    --glass-bg: rgba(12, 17, 28, 0.78);
+    --glass-bg: rgba(28, 7, 13, 0.82);
     --glass-blur: blur(14px);
-    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.65);
-    --glass-shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(223, 161, 67, 0.12);
+    --glass-shadow: 0 8px 32px rgba(6, 1, 2, 0.8);
+    --glass-shadow-hover: 0 12px 40px rgba(6, 1, 2, 0.92), 0 0 24px rgba(194, 41, 53, 0.24);
 
     /* Typography Hierarchy */
     --font-heading: 'Cinzel', Georgia, 'Times New Roman', serif;
@@ -99,18 +106,23 @@ html {
 body {
     font-family: var(--font-body);
     color: var(--parchment);
-    background-color: var(--void-black);
-    /* Layered Celestial Atmosphere: Starfield clusters, Cosmic Nebula fog, Astrolabe coordinate grid */
+    background-color: #0c0205;
+    /* Layered Celestial Atmosphere in Dark Vignetted Blood-Red */
     background-image:
-        radial-gradient(1px 1px at 28px 36px, rgba(194, 201, 216, 0.25), transparent),
-        radial-gradient(1px 1px at 110px 170px, rgba(223, 161, 67, 0.2), transparent),
-        radial-gradient(1.5px 1.5px at 230px 85px, rgba(78, 205, 196, 0.22), transparent),
-        radial-gradient(1px 1px at 340px 270px, rgba(194, 201, 216, 0.18), transparent),
-        radial-gradient(circle at 14% 12%, rgba(59, 117, 127, 0.1) 0%, transparent 45%),
-        radial-gradient(circle at 86% 84%, rgba(223, 161, 67, 0.05) 0%, transparent 45%),
-        radial-gradient(circle at 50% 0%, rgba(26, 36, 61, 0.42) 0%, transparent 68%),
-        linear-gradient(rgba(194, 201, 216, 0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(194, 201, 216, 0.02) 1px, transparent 1px);
+        /* Twinkling celestial particles: silver, candlelight gold, verdigris, crimson */
+        radial-gradient(1px 1px at 28px 36px, rgba(220, 200, 210, 0.28), transparent),
+        radial-gradient(1px 1px at 110px 170px, rgba(226, 164, 70, 0.22), transparent),
+        radial-gradient(1.5px 1.5px at 230px 85px, rgba(194, 41, 53, 0.3), transparent),
+        radial-gradient(1px 1px at 340px 270px, rgba(220, 200, 210, 0.18), transparent),
+        /* Atmospheric Nebulae: Crimson haze, verdigris astrolabe aura, candlelight hearth */
+        radial-gradient(circle at 18% 14%, rgba(194, 41, 53, 0.22) 0%, transparent 48%),
+        radial-gradient(circle at 84% 82%, rgba(226, 164, 70, 0.08) 0%, transparent 45%),
+        radial-gradient(circle at 50% 0%, rgba(158, 26, 37, 0.35) 0%, transparent 64%),
+        /* Geometric Astrolabe Coordinate Grid in Faint Crimson/Silver */
+        linear-gradient(rgba(220, 160, 175, 0.022) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(220, 160, 175, 0.022) 1px, transparent 1px),
+        /* Primary Deep Vignetted Blood-Red Horizon */
+        radial-gradient(ellipse 135% 115% at 50% 30%, #300810 0%, #22050c 35%, #130206 70%, #060102 100%);
     background-size:
         320px 320px,
         380px 380px,
@@ -120,7 +132,8 @@ body {
         100% 100%,
         100% 100%,
         48px 48px,
-        48px 48px;
+        48px 48px,
+        100% 100%;
     background-attachment: fixed;
     line-height: 1.65;
     min-height: 100vh;
@@ -128,6 +141,24 @@ body {
     flex-direction: column;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    position: relative;
+}
+
+/* Optical Viewport Vignette: deepens screen edges into dark blood shadows */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(ellipse at 50% 45%, transparent 35%, rgba(18, 3, 6, 0.52) 72%, rgba(6, 1, 2, 0.9) 100%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+header, main, footer, .toast-container {
+    position: relative;
+    z-index: 1;
 }
 
 main {
@@ -140,20 +171,20 @@ main {
     height: 8px;
 }
 ::-webkit-scrollbar-track {
-    background: var(--void-black);
+    background: #080103;
 }
 ::-webkit-scrollbar-thumb {
-    background: #172033;
-    border: 2px solid var(--void-black);
+    background: #3b0e16;
+    border: 2px solid #080103;
     border-radius: var(--radius-pill);
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: var(--silver-dim);
+    background: #611522;
 }
 
-/* Selection Highlight in Candlelight Amber */
+/* Selection Highlight in Candlelight Amber & Crimson */
 ::selection {
-    background-color: rgba(223, 161, 67, 0.3);
+    background-color: rgba(194, 41, 53, 0.38);
     color: var(--bone-white);
 }
 
@@ -168,7 +199,7 @@ h1, h2, h3, h4, h5, h6 {
 h1 {
     font-size: 2.3rem;
     letter-spacing: 0.06em;
-    text-shadow: 0 0 30px rgba(194, 201, 216, 0.12);
+    text-shadow: 0 0 30px rgba(194, 41, 53, 0.2);
 }
 
 h2 {
@@ -199,11 +230,12 @@ a:hover {
    3. OBSERVATORY HEADER & NAVIGATION
    ========================================================================= */
 header {
-    background: rgba(8, 12, 20, 0.85);
+    background: rgba(18, 4, 8, 0.88);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     padding: 18px 40px;
-    border-bottom: 1px solid var(--silver-border);
+    border-bottom: 1px solid rgba(194, 41, 53, 0.28);
+    box-shadow: 0 4px 24px rgba(6, 1, 2, 0.7);
     position: sticky;
     top: 0;
     z-index: 1000;
@@ -333,22 +365,22 @@ header nav ul li a.active,
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #1b263b 0%, #293856 100%);
+    background: linear-gradient(135deg, #4d0e17 0%, #7d1724 100%);
     color: var(--bone-white);
-    border: 1px solid rgba(78, 205, 196, 0.38);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(194, 201, 216, 0.15);
+    border: 1px solid rgba(220, 60, 75, 0.45);
+    box-shadow: 0 4px 18px rgba(6, 1, 2, 0.6), inset 0 1px 0 rgba(255, 200, 210, 0.2);
 }
 
 .btn-primary:hover {
-    background: linear-gradient(135deg, #24334e 0%, #364b73 100%);
-    border-color: var(--teal-glow);
-    box-shadow: 0 0 20px rgba(78, 205, 196, 0.3), inset 0 0 12px rgba(78, 205, 196, 0.15);
+    background: linear-gradient(135deg, #61131e 0%, #991d2d 100%);
+    border-color: #d63847;
+    box-shadow: 0 0 22px rgba(194, 41, 53, 0.45), inset 0 0 12px rgba(194, 41, 53, 0.25);
     color: #ffffff;
     transform: translateY(-2px);
 }
 
 .btn-secondary {
-    background: rgba(14, 20, 32, 0.7);
+    background: rgba(28, 8, 14, 0.78);
     color: var(--parchment);
     border: 1px solid var(--silver-border);
     backdrop-filter: blur(8px);
@@ -356,6 +388,7 @@ header nav ul li a.active,
 }
 
 .btn-secondary:hover {
+    background: rgba(40, 11, 20, 0.9);
     border-color: var(--candlelight);
     color: var(--bone-white);
     box-shadow: 0 0 16px rgba(223, 161, 67, 0.22);
@@ -919,7 +952,7 @@ header nav ul li a.active,
 .track-box input,
 .admin-item-actions select,
 .card-actions select {
-    background-color: rgba(6, 9, 15, 0.85);
+    background-color: rgba(18, 4, 8, 0.88);
     border: 1px solid var(--silver-border);
     border-radius: var(--radius-sm);
     padding: 12px 14px;
@@ -944,8 +977,8 @@ header nav ul li a.active,
 .card-actions select:focus {
     outline: none;
     border-color: var(--candlelight);
-    box-shadow: 0 0 0 3px var(--candlelight-soft), 0 0 12px rgba(223, 161, 67, 0.2);
-    background-color: rgba(8, 12, 20, 0.95);
+    box-shadow: 0 0 0 3px var(--candlelight-soft), 0 0 14px rgba(223, 161, 67, 0.25);
+    background-color: rgba(26, 6, 12, 0.95);
 }
 
 .auth-card input::placeholder,
@@ -962,9 +995,9 @@ header nav ul li a.active,
 .report-form button,
 .panel-form button {
     margin-top: 24px;
-    background: linear-gradient(135deg, #1b263b 0%, #293856 100%);
+    background: linear-gradient(135deg, #4d0e17 0%, #7d1724 100%);
     color: var(--bone-white);
-    border: 1px solid rgba(78, 205, 196, 0.38);
+    border: 1px solid rgba(220, 60, 75, 0.45);
     border-radius: var(--radius-sm);
     padding: 13px;
     font-size: 0.95rem;
@@ -973,16 +1006,16 @@ header nav ul li a.active,
     letter-spacing: 0.06em;
     text-transform: uppercase;
     cursor: pointer;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 4px 18px rgba(6, 1, 2, 0.6), inset 0 1px 0 rgba(255, 200, 210, 0.2);
     transition: var(--transition);
 }
 
 .auth-card button:hover,
 .report-form button:hover,
 .panel-form button:hover {
-    background: linear-gradient(135deg, #24334e 0%, #364b73 100%);
-    border-color: var(--teal-glow);
-    box-shadow: 0 0 20px rgba(78, 205, 196, 0.3), inset 0 0 12px rgba(78, 205, 196, 0.15);
+    background: linear-gradient(135deg, #61131e 0%, #991d2d 100%);
+    border-color: #d63847;
+    box-shadow: 0 0 22px rgba(194, 41, 53, 0.45), inset 0 0 12px rgba(194, 41, 53, 0.25);
     color: #ffffff;
     transform: translateY(-2px);
 }
@@ -1116,7 +1149,7 @@ header nav ul li a.active,
 }
 
 .announcement-card .card-footer .category {
-    background-color: rgba(8, 12, 20, 0.9);
+    background-color: rgba(22, 5, 10, 0.92);
     border: 1px solid var(--silver-border);
     padding: 3px 10px;
     border-radius: var(--radius-pill);
@@ -1242,9 +1275,9 @@ header nav ul li a.active,
 }
 
 .track-box button {
-    background: linear-gradient(135deg, #1b263b 0%, #293856 100%);
+    background: linear-gradient(135deg, #4d0e17 0%, #7d1724 100%);
     color: var(--bone-white);
-    border: 1px solid rgba(78, 205, 196, 0.38);
+    border: 1px solid rgba(220, 60, 75, 0.45);
     border-radius: var(--radius-sm);
     padding: 12px 24px;
     cursor: pointer;
@@ -1257,8 +1290,9 @@ header nav ul li a.active,
 }
 
 .track-box button:hover {
-    border-color: var(--teal-glow);
-    box-shadow: 0 0 18px rgba(78, 205, 196, 0.3);
+    background: linear-gradient(135deg, #61131e 0%, #991d2d 100%);
+    border-color: #d63847;
+    box-shadow: 0 0 20px rgba(194, 41, 53, 0.45);
 }
 
 .report-count {
@@ -1389,16 +1423,16 @@ header nav ul li a.active,
     justify-content: space-between;
     gap: 16px;
     padding: 16px 18px;
-    background-color: rgba(7, 10, 16, 0.75);
-    border: 1px solid rgba(194, 201, 216, 0.1);
+    background-color: rgba(18, 4, 8, 0.78);
+    border: 1px solid rgba(220, 160, 175, 0.12);
     border-radius: var(--radius-sm);
     margin-bottom: 12px;
     transition: var(--transition);
 }
 
 .admin-item:hover {
-    border-color: rgba(194, 201, 216, 0.28);
-    background-color: rgba(12, 17, 28, 0.88);
+    border-color: rgba(194, 41, 53, 0.35);
+    background-color: rgba(28, 7, 13, 0.9);
 }
 
 .admin-item-main {
@@ -1718,8 +1752,8 @@ header nav ul li a.active,
 .pipeline-bar-bg {
     flex: 1;
     height: 8px;
-    background-color: rgba(6, 9, 15, 0.85);
-    border: 1px solid rgba(194, 201, 216, 0.08);
+    background-color: rgba(18, 4, 8, 0.88);
+    border: 1px solid rgba(220, 160, 175, 0.1);
     border-radius: 4px;
     margin: 0 14px;
     overflow: hidden;
@@ -1753,13 +1787,13 @@ header nav ul li a.active,
 }
 
 .toast {
-    background-color: rgba(8, 12, 20, 0.95);
+    background-color: rgba(26, 6, 12, 0.96);
     border: 1px solid var(--silver-border);
     border-radius: var(--radius-md);
     padding: 16px 22px;
     min-width: 290px;
     max-width: 420px;
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.8), 0 0 16px rgba(223, 161, 67, 0.15);
+    box-shadow: 0 12px 36px rgba(6, 1, 2, 0.85), 0 0 16px rgba(194, 41, 53, 0.2);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     animation: slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1831,8 +1865,9 @@ header nav ul li a.active,
    19. FOOTER
    ========================================================================== */
 footer {
-    background: rgba(8, 12, 20, 0.85);
-    border-top: 1px solid var(--silver-border);
+    background: rgba(14, 3, 6, 0.92);
+    border-top: 1px solid rgba(194, 41, 53, 0.22);
+    box-shadow: 0 -4px 24px rgba(6, 1, 2, 0.6);
     color: var(--parchment-dim);
     font-family: var(--font-heading);
     letter-spacing: 0.04em;
