@@ -137,7 +137,10 @@ def serve_upload(filename):
 
 @app.route('/<path:path>')
 def serve_static(path):
-    return send_from_directory(FRONTEND_DIR, path)
+    file_path = os.path.join(FRONTEND_DIR, path)
+    if os.path.isfile(file_path):
+        return send_from_directory(FRONTEND_DIR, path)
+    return jsonify({'error': 'Resource not found'}), 404
 
 
 # Error handlers

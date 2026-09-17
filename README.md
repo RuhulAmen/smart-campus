@@ -74,7 +74,6 @@ Smart Campus Project/
 ├── Dockerfile              # Multi-stage production container build
 ├── docker-compose.yml      # Orchestrates Flask web app + MongoDB 6.0
 ├── requirements.txt        # Canonical Python dependencies
-├── vercel.json             # Vercel deployment rewrite rules
 └── README.md
 ```
 
