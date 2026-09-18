@@ -150,5 +150,7 @@ The app will be available at `http://localhost:5000`
 ## 📸 Screenshots
 
 ![alt text](image.png)
+
 ![alt text](image-1.png)
+
 ---
