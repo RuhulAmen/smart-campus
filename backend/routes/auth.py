@@ -81,6 +81,8 @@ def signup():
         }), 201
 
     except Exception as e:
+        if "Connection refused" in str(e) or "Timeout" in type(e).__name__ or "ServerSelectionTimeoutError" in type(e).__name__:
+            return jsonify({'error': 'Database connection failed. Please check network access and MongoDB cluster status.'}), 503
         err_type = type(e).__name__
         err_msg = str(e)
         if "Connection refused" in err_msg or "Timeout" in err_type or "ServerSelectionTimeoutError" in err_type or "AutoReconnect" in err_type:
@@ -117,6 +119,8 @@ def login():
         }), 200
 
     except Exception as e:
+        if "Connection refused" in str(e) or "Timeout" in type(e).__name__ or "ServerSelectionTimeoutError" in type(e).__name__:
+            return jsonify({'error': 'Database connection failed. Please check network access and MongoDB cluster status.'}), 503
         err_type = type(e).__name__
         err_msg = str(e)
         if "Connection refused" in err_msg or "Timeout" in err_type or "ServerSelectionTimeoutError" in err_type or "AutoReconnect" in err_type:

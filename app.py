@@ -89,6 +89,12 @@ if not mongo_uri:
             "Please configure MONGO_URI in your Vercel project settings: Settings -> Environment Variables."
         )
     mongo_uri = 'mongodb://localhost:27017/smart_campus'
+
+# Ensure authSource=admin for MongoDB Atlas SRV connections if not explicitly specified
+if mongo_uri.startswith('mongodb+srv://') and 'authSource=' not in mongo_uri:
+    sep = '&' if '?' in mongo_uri else '?'
+    mongo_uri = f"{mongo_uri}{sep}authSource=admin"
+
 app.config['MONGO_URI'] = mongo_uri
 app.config['MONGO_DB_NAME'] = os.getenv('MONGO_DB_NAME', 'smart_campus')
 app.config['JWT_EXPIRATION_HOURS'] = int(os.getenv('JWT_EXPIRATION_HOURS', '24'))
@@ -115,6 +121,9 @@ mongo_options = {
     'serverSelectionTimeoutMS': MONGO_TIMEOUT_MS,
     'connect': False,
 }
+if mongo_uri.startswith('mongodb+srv://'):
+    mongo_options['authSource'] = 'admin'
+
 try:
     import certifi
     mongo_options['tlsCAFile'] = certifi.where()
