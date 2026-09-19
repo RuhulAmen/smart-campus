@@ -48,8 +48,6 @@ Smart Campus Project/
 │   ├── schemas/            # Marshmallow request validation schemas
 │   ├── utils/              # Limiter, validator, DB indexes, email notifications
 │   └── create_admin.py     # CLI script to provision the first admin account
-├── docs/
-│   └── LinkedIn_Post_Draft.md # Social launch and post drafts
 ├── frontend/
 │   ├── CSS/style.css       # Dark-themed responsive stylesheet
 │   ├── icons/              # PWA app icons (192px, 512px)
@@ -137,8 +135,11 @@ python3 -m unittest discover -s tests -v
 
 ```bash
 python3 app.py
+
 ```
+
 Or with Docker Compose:
+
 ```bash
 docker compose up -d
 ```
